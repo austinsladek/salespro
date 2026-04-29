@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SalesPro CRM v202604272900 -->
+<!-- SalesPro CRM v202604273000 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -309,7 +309,7 @@ input:checked+.tslider:before{transform:translateX(18px)}
   <!-- right controls -->
   <div class="mc">
     <div class="mfab padd" id="addPinFab" onclick="togglePinMode()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
     </div>
     <div class="mfab" onclick="locateMe()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
@@ -1099,42 +1099,32 @@ function showStagingPin(ll){
 
 function togglePinMode(){
   if(!hasPerm('pins')){toast('⛔ No permission to add pins');return}
-  pinMode=!pinMode;
-  document.getElementById('addPinFab').className='mfab '+(pinMode?'pcancel':'padd');
-  if(pinMode){
-    document.getElementById('modeBar').classList.add('show');
-    toast('Tap map to place a pin');
-  } else {
+  // If palette already open, close everything
+  if(document.getElementById('pinPalette').classList.contains('show')){
     cancelPinDrop();
-    document.getElementById('modeBar').classList.remove('show');
     document.getElementById('pinPalette').classList.remove('show');
-    pendingLL=null;
+    document.getElementById('addPinFab').className='mfab padd';
+    pinMode=false;
+    return;
   }
+  // Open palette immediately — user picks type first
+  pinMode=true;
+  document.getElementById('addPinFab').className='mfab pcancel';
+  document.getElementById('modeBar').classList.remove('show');
+  document.getElementById('pinPalette').classList.add('show');
+  toast('Select a pin type');
 }
 
 function pickStatus(st){
   document.getElementById('pinPalette').classList.remove('show');
-  if(!pendingLL)return;
   stagingStatus = st;
-  // Create draggable staging marker
-  if(stagingMarker){ stagingMarker.remove(); stagingMarker=null; }
+  // Now tell user to tap map to place
   const c = PC[st]||PC['not-home'];
-  const el = document.createElement('div');
-  el.style.cssText=`width:38px;height:38px;border-radius:50%;background:${c.c};display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 0 4px rgba(255,255,255,.4),0 4px 12px rgba(0,0,0,.6);cursor:grab;border:3px solid white;`;
-  el.textContent = c.e;
-  el.title = 'Drag to reposition';
-  stagingMarker = new maplibregl.Marker({element:el, anchor:'center', draggable:true})
-    .setLngLat([pendingLL.lng, pendingLL.lat])
-    .addTo(map);
-  stagingMarker.on('dragstart',()=>{ el.style.cursor='grabbing'; el.style.transform='scale(1.2)'; });
-  stagingMarker.on('dragend',()=>{
-    el.style.cursor='grab'; el.style.transform='scale(1)';
-    const pos=stagingMarker.getLngLat();
-    pendingLL={lat:pos.lat, lng:pos.lng};
-  });
-  // Show confirm bar, hide mode bar
-  document.getElementById('modeBar').style.display='none';
-  document.getElementById('confirmBar').classList.add('show');
+  const bar = document.getElementById('modeBar');
+  bar.textContent = c.e+' Tap map to place pin — drag to adjust';
+  bar.classList.add('show');
+  bar.style.display='';
+  pendingLL = null; // wait for map tap
 }
 
 function confirmPinDrop(){
@@ -1537,62 +1527,94 @@ function confirmDateTime(){
 // ── Universal Pin Details Modal ──────────────────────────────
 function openPinDetail(addr, status){
   const c = PC[status]||PC['not-home'];
+  const isAppt = status==='appointment';
+  const isQuote = status==='quote';
+  const needsDetail = isAppt||isQuote;
+
   document.getElementById('pdTit').textContent = c.e+' '+c.l+' — Details';
   document.getElementById('pdAddr').value = addr||'';
   document.getElementById('pdAddr').removeAttribute('readonly');
   document.getElementById('pdAddr').placeholder = 'Enter or edit address';
   document.getElementById('pdRep').innerHTML = repOpts();
+
+  // Clear all fields
   ['pdName','pdPhone','pdEmail','pdDate','pdDetails','pdValue'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('pdDateLabel').textContent='Tap to select date & time';
   document.getElementById('pdDateLabel').style.color='#555';
-  // Show date row only for appointments
-  document.getElementById('pdDateRow').style.display = status==='appointment'?'':'none';
-  // Show value as required only for quote/appointment
-  const needsVal = status==='quote'||status==='appointment';
-  const vLabel = document.querySelector('label[for="pdValue"]')||document.getElementById('pdValueLabel');
+
+  // Date row — only for appointments
+  document.getElementById('pdDateRow').style.display = isAppt?'':'none';
+
+  // Name label — required for quote/appointment, optional for others
+  const nameLabel = document.querySelector('#pinDetailOv label[for="pdName"]')||
+    document.querySelector('#pinDetailOv .fg label.fl');
+  if(nameLabel) nameLabel.textContent = needsDetail?'Client Name *':'Client Name (optional)';
+
+  // Value placeholder — required for quote/appointment
   const vField = document.getElementById('pdValue');
-  if(vField) vField.placeholder = needsVal?'0.00 (required)':'0.00 (optional)';
+  if(vField) vField.placeholder = needsDetail?'0.00 (required)':'0.00 (optional)';
+
+  // Details label
+  const dField = document.getElementById('pdDetails');
+  if(dField) dField.placeholder = isAppt?'Job description, scope of work…':
+    isQuote?'Quote details, scope…':'Notes, observations…';
+
+  // Save button text
   document.getElementById('pdSaveBtn').textContent =
-    status==='appointment'?'Book Appointment':
-    status==='quote'?'Save Quote':'Save Details';
+    isAppt?'Book Appointment': isQuote?'Save Quote':'Save Pin';
+
   openO('pinDetailOv');
 }
 
 async function savePinDetail(){
-  const name = document.getElementById('pdName').value.trim();
-  const value = document.getElementById('pdValue').value.trim();
-  const date  = document.getElementById('pdDate').value;
   const status = pendingPinStatus;
-  const needsValue = status==='quote'||status==='appointment';
-  const needsDate  = status==='appointment';
-  if(!name){toast('⚠️ Client name required');return}
-  if(needsValue&&!value){toast('⚠️ Value required for '+PC[status].l);return}
-  if(needsDate&&!date){toast('⚠️ Select appointment date & time');return}
-  const ld={
-    id:'l'+Date.now(), pinId:pendingPinId,
-    name, phone:document.getElementById('pdPhone').value,
-    email:document.getElementById('pdEmail').value,
-    address:document.getElementById('pdAddr').value,
-    status, details:document.getElementById('pdDetails').value,
-    value, repId:document.getElementById('pdRep').value,
-    createdAt:new Date().toISOString()
-  };
-  leads.push(ld);
-  if(status==='appointment'&&date){
-    const ev={id:'ev'+Date.now(),title:'Appt: '+name,start:date,end:date,
-      type:'job',clientId:ld.id,repId:ld.repId,notes:ld.details,value,
-      createdAt:new Date().toISOString()};
-    events.push(ev);
-    try{ await sb.upsert('sp_events', evToDb(ev)); }catch(e){}
+  const isAppt  = status==='appointment';
+  const isQuote = status==='quote';
+  const needsDetail = isAppt||isQuote;
+
+  const name    = document.getElementById('pdName').value.trim();
+  const value   = document.getElementById('pdValue').value.trim();
+  const date    = document.getElementById('pdDate').value;
+  const details = document.getElementById('pdDetails').value.trim();
+  const phone   = document.getElementById('pdPhone').value.trim();
+  const email   = document.getElementById('pdEmail').value.trim();
+  const addr    = document.getElementById('pdAddr').value.trim();
+  const repId   = document.getElementById('pdRep').value;
+
+  // Validate mandatory fields
+  if(needsDetail && !name){toast('⚠️ Client name required');return}
+  if(needsDetail && !value){toast('⚠️ Value is required for '+PC[status].l);return}
+  if(isAppt && !date){toast('⚠️ Select appointment date & time');return}
+
+  // Build lead if we have any data worth saving
+  const hasData = name||phone||email||details||value;
+  if(hasData){
+    const ld={
+      id:'l'+Date.now(), pinId:pendingPinId,
+      name, phone, email, address:addr,
+      status, details, value, repId,
+      createdAt:new Date().toISOString()
+    };
+    leads.push(ld);
+    if(isAppt && date){
+      const ev={id:'ev'+Date.now(),title:'Appt: '+name,start:date,end:date,
+        type:'job',clientId:ld.id,repId,notes:details,value,
+        createdAt:new Date().toISOString()};
+      events.push(ev);
+      try{ await sb.upsert('sp_events', evToDb(ev)); }catch(e){}
+    }
+    try{ await sb.upsert('sp_leads', leadToDb(ld)); }catch(e){}
   }
-  saveLocal(); pendingPinId=null; pendingPinStatus=null;
+
+  saveLocal();
+  pendingPinId=null; pendingPinStatus=null;
   closeO('pinDetailOv');
   renderPins(); refreshHome();
-  try{ await sb.upsert('sp_leads', leadToDb(ld)); }catch(e){}
-  toast(status==='appointment'?'✅ Appointment booked!':'💾 Details saved!');
-  logAct(PC[status].e+' Details saved', name+(value?' — $'+Number(value).toLocaleString():''));
+  const msg = isAppt?'✅ Appointment booked!': isQuote?'💾 Quote saved!':'📍 Pin saved!';
+  toast(msg);
+  if(hasData) logAct(PC[status].e+' '+PC[status].l, name||(addr?addr.split(',')[0]:''));
 }
 
 
