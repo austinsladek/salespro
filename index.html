@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SalesPro CRM v202604272600 -->
+<!-- SalesPro CRM v202604272700 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -819,11 +819,10 @@ function doLogin(){
   const pass  = document.getElementById('liPass').value;
   if(!email||!pass){authErr('Fill all fields');return}
 
-  // Always check local cache (instant, no network needed)
   const u = users.find(x=>x.email.toLowerCase()===email && x.pass===pass);
 
   if(!u){
-    authErr('Account not found. Sign up or check credentials.');
+    authErr('Account not found — check credentials');
     return;
   }
 
@@ -831,17 +830,13 @@ function doLogin(){
   session = u.id;
   S.s('sp_sess', session);
 
-  if(u.role==='admin'){
-    openAdminPinPrompt(()=>{
-      launchApp();
-      pullAll().catch(()=>{});
-      startPolling();
-    });
-    return;
+  // Log straight in — no PIN prompt for now
+  try{
+    launchApp();
+    setTimeout(()=>{ pullAll().catch(()=>{}); startPolling(); }, 500);
+  }catch(err){
+    authErr('Error: '+err.message);
   }
-  launchApp();
-  pullAll().catch(()=>{});
-  startPolling();
 }
 function doSignup(){
   const first = document.getElementById('suFirst').value.trim();
@@ -876,13 +871,19 @@ function logout(){
   ['liEmail','liPass'].forEach(id=>document.getElementById(id).value='');
 }
 function launchApp(){
-  document.getElementById('auth-screen').classList.add('hidden');
-  document.getElementById('adminBtn').style.display=isAdmin()?'':'none';
-  document.getElementById('drawZoneFab').classList.toggle('show',isAdmin());
-  const u=me();
-  document.getElementById('hName').textContent=u?u.first:'User';
-  document.getElementById('hGreet').textContent='Welcome back, '+uFull(u);
-  goTo('map');
+  try{
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('adminBtn').style.display=isAdmin()?'':'none';
+    document.getElementById('drawZoneFab').classList.toggle('show',isAdmin());
+    const u=me();
+    document.getElementById('hName').textContent=u?u.first:'User';
+    document.getElementById('hGreet').textContent='Welcome back, '+(u?uFull(u):'');
+    goTo('map');
+  }catch(err){
+    console.error('launchApp error:',err);
+    document.getElementById('authErr').textContent='Launch error: '+err.message;
+    document.getElementById('authErr').style.display='block';
+  }
 }
 
 // ── Admin PIN gate ─────────────────────────────────────────
