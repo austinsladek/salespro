@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SalesPro CRM v202604272700 -->
+<!-- SalesPro CRM v202604272800 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -865,10 +865,11 @@ function doSignup(){
   startPolling();
 }
 function logout(){
-  session=null;S.d('sp2_sess');
-  document.getElementById('auth-screen').classList.remove('hidden');
-  document.getElementById('authErr').style.display='none';
-  ['liEmail','liPass'].forEach(id=>document.getElementById(id).value='');
+  session=null;
+  S.d('sp_sess');
+  S.d('sp_sess');
+  localStorage.clear();
+  location.replace(location.pathname);
 }
 function launchApp(){
   try{
@@ -2018,6 +2019,7 @@ document.getElementById('hChip').addEventListener('click',openUserOv);
 // INIT
 // ═══════════════════════════════════
 window.addEventListener('load',()=>{
+  // ?clear=1 wipes service worker cache
   if(location.search.includes('clear=1')){
     if('serviceWorker' in navigator){
       navigator.serviceWorker.getRegistrations().then(regs=>{
@@ -2026,8 +2028,23 @@ window.addEventListener('load',()=>{
           caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))))
         ]).then(()=>location.replace(location.pathname));
       });
-      return;
     }
+    return;
+  }
+  // ?reset=1 wipes everything including session and localStorage
+  if(location.search.includes('reset=1')){
+    localStorage.clear();
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(regs=>{
+        Promise.all([
+          ...regs.map(r=>r.unregister()),
+          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))))
+        ]).then(()=>location.replace(location.pathname));
+      });
+    } else {
+      location.replace(location.pathname);
+    }
+    return;
   }
 
   // Ensure admin always in local users (sync, instant)
@@ -2040,9 +2057,14 @@ window.addEventListener('load',()=>{
     saveLocal();
   }
 
-  // Show UI immediately based on session
+  // Auto-login only if we have a valid session
   if(session && users.find(u=>u.id===session)){
-    launchApp();
+    try{ launchApp(); }
+    catch(e){ 
+      // If launchApp fails, clear session and show login
+      session=null; S.d('sp_sess');
+      console.error('Auto-login failed:', e);
+    }
   }
   // else auth screen stays visible (it's shown by default)
 
