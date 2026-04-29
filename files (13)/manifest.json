@@ -1,0 +1,19 @@
+{
+  "name": "SalesPro CRM",
+  "short_name": "SalesPro",
+  "description": "Field Sales CRM — pins, leads, schedule & leaderboard",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#242424",
+  "theme_color": "#242424",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "./icon-120.png", "sizes": "120x120", "type": "image/png" },
+    { "src": "./icon-152.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "./icon-167.png", "sizes": "167x167", "type": "image/png" },
+    { "src": "./icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": []
+}

@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<!-- SalesPro CRM v202604272600 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SalesPro CRM">
+<meta name="theme-color" content="#242424">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="./icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>SalesPro CRM</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+:root{
+  --p:#38b6ff;--dark:#242424;--w:#fff;
+  --d2:#1a1a1a;--d3:#2e2e2e;--d4:#3a3a3a;
+  --pdim:rgba(56,182,255,.14);--pglow:rgba(56,182,255,.35);
+  --ok:#2ecc71;--warn:#f39c12;--err:#e74c3c;--pur:#9b59b6;
+  --nav:68px;--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--d2);color:var(--w);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;position:fixed}
+
+/* AUTH */
+#auth-screen{position:fixed;inset:0;z-index:9000;background:linear-gradient(160deg,#0d1a26,var(--d2) 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+#auth-screen.hidden{display:none}
+.auth-logo{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:38px;font-weight:700;color:var(--p);letter-spacing:3px;margin-bottom:4px}
+.auth-sub{font-size:11px;color:#666;letter-spacing:2px;text-transform:uppercase;margin-bottom:36px}
+.auth-card{width:100%;max-width:360px;background:var(--dark);border:1px solid var(--d4);border-radius:20px;padding:22px}
+.atabs{display:flex;background:var(--d3);border-radius:10px;padding:3px;gap:2px;margin-bottom:18px}
+.atab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:700;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;letter-spacing:.5px;cursor:pointer;border-radius:8px;transition:all .2s;color:#888;border:none;background:none}
+.atab.on{background:var(--p);color:var(--dark)}
+
+/* NAV */
+#nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav) + var(--sb));background:var(--dark);border-top:1px solid var(--d4);display:flex;align-items:flex-start;padding-top:8px;z-index:800}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 2px;border:none;background:none;color:#555;transition:color .2s}
+.nb.on{color:var(--p)}
+.nb svg{width:21px;height:21px}
+.nb span{font-size:9px;font-weight:700;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;letter-spacing:.5px;text-transform:uppercase}
+
+/* PAGES — each page is display:none by default, .on makes it flex */
+.pg{position:fixed;top:0;left:0;right:0;bottom:calc(var(--nav) + var(--sb));display:none;flex-direction:column;overflow:hidden}
+.pg.on{display:flex}
+
+/* PAGE HEADER */
+.ph{background:var(--dark);padding:10px 16px 9px;padding-top:calc(10px + var(--st));border-bottom:1px solid var(--d4);flex-shrink:0}
+.ph h1{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:21px;font-weight:700;color:var(--p);letter-spacing:1px}
+.ph p{font-size:11px;color:#777;margin-top:1px}
+.ph-row{display:flex;align-items:center;justify-content:space-between}
+
+/* SCROLL CONTAINER */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{width:3px}
+.scroll::-webkit-scrollbar-thumb{background:var(--d4);border-radius:2px}
+
+/* MAP */
+#map-pg{background:var(--d2)}
+#map{width:100%;flex:1;min-height:0;z-index:1;background:#1a1a1a} .maplibregl-map,.maplibregl-canvas{width:100%!important;height:100%!important}
+.mc{position:absolute;top:calc(10px + var(--st));right:12px;z-index:410;display:flex;flex-direction:column;gap:8px}
+.mfab{width:44px;height:44px;background:var(--dark);border:1px solid var(--d4);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.5);color:var(--w);transition:all .2s;flex-shrink:0}
+.mfab:active{transform:scale(.93)}
+.mfab.padd{background:var(--p);border-color:var(--p);color:var(--dark)}
+.mfab.pcancel{background:var(--err);border-color:var(--err);color:var(--w)}
+.mfab svg{width:20px;height:20px;flex-shrink:0}
+.mode-bar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--p);color:var(--dark);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:700;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;letter-spacing:.5px;z-index:410;display:none;box-shadow:0 4px 16px var(--pglow);white-space:nowrap;animation:pb 1.4s ease-in-out infinite}
+.mode-bar.show{display:block}
+@keyframes pb{0%,100%{opacity:1}50%{opacity:.6}}
+.pin-palette{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:410;background:var(--dark);border:1px solid var(--d4);border-radius:18px;padding:12px;display:none;gap:8px;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,.7);flex-wrap:wrap;max-width:93vw;justify-content:center}
+.pin-palette.show{display:flex}
+.ppt{font-size:10px;color:#777;width:100%;text-align:center;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.ppo{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 7px;border-radius:10px;transition:background .15s}
+.ppo:active{background:var(--d3)}
+.ppd{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.ppo>span{font-size:9px;color:#999;text-align:center;max-width:52px;line-height:1.2}
+/* zone toolbar */
+.zone-bar{position:absolute;top:calc(10px + var(--st));left:12px;z-index:410;background:var(--dark);border:1px solid var(--p);border-radius:14px;padding:10px 13px;display:none;flex-direction:column;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.6);min-width:155px}
+.zone-bar.show{display:flex}
+.zone-bar h3{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:13px;font-weight:700;color:var(--p);letter-spacing:.5px}
+.zb-btn{padding:7px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;text-align:center;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif}
+.zone-swatch{width:20px;height:20px;border-radius:5px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.zone-swatch.sel{border-color:var(--w)}
+/* draw zone btn */
+.draw-zone-fab{position:absolute;bottom:16px;right:70px;z-index:410;background:var(--dark);border:1px solid var(--d4);border-radius:10px;padding:0 13px;height:44px;display:none;align-items:center;gap:6px;font-size:12px;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;color:var(--w);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.5)}
+.draw-zone-fab.show{display:flex}
+
+/* HOME */
+.mcard{background:var(--dark);border:1px solid var(--d4);border-radius:14px;padding:13px}
+.mcard.hi{border-color:var(--p);background:var(--pdim)}
+.ml{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.mv{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:26px;font-weight:700;color:var(--p);margin-top:3px}
+.ms{font-size:11px;color:#666;margin-top:1px}
+.sec{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:15px;font-weight:700;color:var(--p);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.act-item{background:var(--dark);border:1px solid var(--d4);border-radius:12px;padding:11px;display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.act-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:var(--pdim)}
+
+/* LEADS */
+.sbar{background:var(--dark);border:1px solid var(--d4);border-radius:11px;display:flex;align-items:center;padding:9px 13px;gap:9px}
+.sbar input{flex:1;background:none;border:none;color:var(--w);font-size:14px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;outline:none}
+.sbar input::placeholder{color:#555}
+.fchips{display:flex;gap:7px;overflow-x:auto;padding:8px 0 0}
+.fchips::-webkit-scrollbar{display:none}
+.fchip{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid var(--d4);background:var(--d3);color:#888;transition:all .15s;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;letter-spacing:.5px}
+.fchip.on{background:var(--pdim);border-color:var(--p);color:var(--p)}
+.lcard{background:var(--dark);border:1px solid var(--d4);border-radius:13px;padding:13px;margin-bottom:9px;cursor:pointer;transition:border-color .2s}
+.lcard:active{border-color:var(--p)}
+.lavatar{width:40px;height:40px;border-radius:10px;background:var(--pdim);border:1px solid var(--p);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;color:var(--p);font-size:16px;flex-shrink:0}
+.lbadge{padding:3px 8px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.ldets{margin-top:9px;padding-top:9px;border-top:1px solid var(--d4);display:flex;gap:14px;flex-wrap:wrap}
+.ldet{font-size:11px;color:#888}
+.ldet strong{color:#ccc;display:block;font-size:12px}
+
+/* SCHEDULE */
+.vtabs{display:flex;background:var(--d3);border-radius:10px;padding:3px;gap:2px}
+.vtab{flex:1;padding:7px 4px;text-align:center;font-size:12px;font-weight:700;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;letter-spacing:.5px;cursor:pointer;border-radius:8px;transition:all .2s;color:#888;border:none;background:none}
+.vtab.on{background:var(--p);color:var(--dark)}
+.cn{display:flex;align-items:center;justify-content:space-between;margin:10px 0 8px}
+.cnbtn{background:var(--d3);border:none;color:var(--w);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cntit{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:15px;font-weight:700;color:var(--p)}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dh{text-align:center;font-size:9px;color:#666;font-weight:700;padding:3px 0;text-transform:uppercase}
+.cday{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:7px;cursor:pointer;font-size:13px;position:relative;transition:background .1s}
+.cday:active{background:var(--d4)}
+.cday.today{background:var(--pdim);color:var(--p);font-weight:700}
+.cday.sel{background:var(--p);color:var(--dark);font-weight:700}
+.cday.other{color:#3a3a3a}
+.evdot{width:4px;height:4px;border-radius:50%;background:var(--p);position:absolute;bottom:2px}
+.wrow{display:grid;grid-template-columns:44px 1fr;gap:7px;align-items:start;margin-bottom:4px}
+.wdl{text-align:center;padding-top:3px}
+.wdn{font-size:10px;color:#666;text-transform:uppercase;font-weight:700}
+.wdd{font-size:18px;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;line-height:1}
+.wdd.today{color:var(--p)}
+.wevc{border-left:1px solid var(--d4);padding-left:8px;min-height:44px;display:flex;flex-direction:column;gap:4px;padding-bottom:6px}
+.tslot{display:grid;grid-template-columns:40px 1fr;gap:7px;min-height:58px;border-bottom:1px solid #1e1e1e}
+.tlabel{font-size:9px;color:#555;text-align:right;padding-top:6px;flex-shrink:0}
+.tcol{border-left:1px solid var(--d4);padding-left:8px;min-height:58px;display:flex;flex-direction:column;gap:4px;padding-top:4px;padding-bottom:4px}
+.echip{background:var(--pdim);border:1px solid var(--p);border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer}
+.echip:active{background:var(--p);color:var(--dark)}
+.et{font-weight:600;font-size:12px}
+.es{font-size:10px;color:#aaa;margin-top:1px}
+
+/* LEADERBOARD */
+.lb-pod{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:22px;height:130px}
+.lb-pi{display:flex;flex-direction:column;align-items:center;flex:1;max-width:90px}
+.pav{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;font-size:17px;background:var(--d3);border:2px solid var(--d4)}
+.pav.g{border-color:#f1c40f;color:#f1c40f}.pav.s{border-color:#bdc3c7;color:#bdc3c7}.pav.b{border-color:#e67e22;color:#e67e22}
+.pname{font-size:9px;color:#aaa;margin-top:3px;text-align:center;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar{width:100%;border-radius:5px 5px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;font-size:12px;padding:4px}
+.pbar.g{background:linear-gradient(180deg,#f1c40f22,#f1c40f44);border:1px solid #f1c40f55;height:70px;color:#f1c40f}
+.pbar.s{background:linear-gradient(180deg,#bdc3c722,#bdc3c744);border:1px solid #bdc3c755;height:52px;color:#bdc3c7}
+.pbar.b{background:linear-gradient(180deg,#e67e2222,#e67e2244);border:1px solid #e67e2255;height:38px;color:#e67e22}
+.lbrow{background:var(--dark);border:1px solid var(--d4);border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:11px;margin-bottom:7px}
+.lbrank{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:17px;font-weight:700;color:#666;width:22px;text-align:center}
+.lbav{width:36px;height:36px;border-radius:9px;background:var(--pdim);border:1px solid var(--p);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;color:var(--p);flex-shrink:0}
+.lbval{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:15px;font-weight:700;color:var(--p)}
+.lbjobs{font-size:11px;color:#888}
+
+/* ADMIN */
+.admin-sect{background:var(--dark);border:1px solid var(--d4);border-radius:14px;padding:14px;margin-bottom:12px}
+.admin-sect h3{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:14px;font-weight:700;color:var(--p);letter-spacing:.5px;margin-bottom:10px;text-transform:uppercase}
+.urow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--d4)}
+.urow:last-child{border-bottom:none}
+.uav{width:34px;height:34px;border-radius:9px;background:var(--pdim);border:1px solid var(--p);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;color:var(--p);flex-shrink:0;font-size:14px}
+.utag{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.utag.admin{background:var(--pdim);color:var(--p);border:1px solid var(--p)}
+.utag.rep{background:rgba(255,255,255,.05);color:#888;border:1px solid var(--d4)}
+.icon-btn{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(var(--nav) + var(--sb) + 16px);right:16px;width:50px;height:50px;background:var(--p);border-radius:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 18px var(--pglow);z-index:700;border:none;transition:transform .2s}
+.fab:active{transform:scale(.9)}
+.fab svg{color:var(--dark);width:22px;height:22px}
+
+/* MODALS */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1500;display:none;align-items:flex-end;backdrop-filter:blur(3px)}
+.ov.show{display:flex}
+.sheet{width:100%;background:var(--dark);border-radius:20px 20px 0 0;padding:16px;padding-bottom:calc(20px + var(--sb));max-height:92dvh;overflow-y:auto;animation:su .27s ease}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.handle{width:34px;height:4px;background:var(--d4);border-radius:2px;margin:0 auto 14px}
+.mtit{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:19px;font-weight:700;color:var(--p);margin-bottom:14px;letter-spacing:.5px}
+.fg{margin-bottom:12px}
+.fl{font-size:10px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block}
+.fi{width:100%;background:var(--d2);border:1px solid var(--d4);border-radius:10px;padding:11px 13px;color:var(--w);font-size:14px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.fi:focus{border-color:var(--p)}
+.fi::placeholder{color:#555}
+.fi:read-only{color:#666}
+select.fi option{background:var(--dark)}
+.brow{display:flex;gap:9px;margin-top:14px}
+.btn{flex:1;padding:13px;border-radius:11px;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer;border:none;transition:all .15s}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--p);color:var(--dark)}
+.btn-s{background:var(--d3);color:var(--w)}
+.btn-d{background:rgba(231,76,60,.12);color:var(--err);border:1px solid var(--err)}
+
+/* perm toggles */
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--d4)}
+.perm-row:last-child{border-bottom:none}
+.perm-label{font-size:13px;font-weight:500}
+.perm-desc{font-size:11px;color:#777;margin-top:1px}
+.toggle{position:relative;width:42px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.tslider{position:absolute;inset:0;background:var(--d4);border-radius:12px;cursor:pointer;transition:.25s}
+.tslider:before{content:'';position:absolute;height:18px;width:18px;left:3px;top:3px;background:var(--w);border-radius:50%;transition:.25s}
+input:checked+.tslider{background:var(--p)}
+input:checked+.tslider:before{transform:translateX(18px)}
+
+/* user chip in home header */
+.uchip{display:flex;align-items:center;gap:6px;background:var(--d3);border-radius:9px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600}
+.udot{width:7px;height:7px;border-radius:50%;background:var(--p)}
+
+/* status colours */
+.s-nh{background:#7f8c8d}.s-ni{background:#e74c3c}.s-cb{background:#f39c12}
+.s-qt{background:#3498db}.s-ap{background:#2ecc71}.s-sl{background:#9b59b6}.s-dk{background:#444;border:1px solid #666}
+.b-not-home{background:#7f8c8d22;color:#95a5a6;border:1px solid #7f8c8d}
+.b-not-interested{background:#e74c3c22;color:#e74c3c;border:1px solid #e74c3c}
+.b-callback{background:#f39c1222;color:#f39c12;border:1px solid #f39c12}
+.b-quote{background:#3498db22;color:#3498db;border:1px solid #3498db}
+.b-appointment{background:#2ecc7122;color:#2ecc71;border:1px solid #2ecc71}
+.b-dnk{background:#44444433;color:#aaa;border:1px solid #555}
+
+/* leaflet popup dark */
+.leaflet-popup-content-wrapper{background:var(--dark)!important;border:1px solid var(--d4)!important;border-radius:12px!important;color:var(--w)!important;box-shadow:0 8px 28px rgba(0,0,0,.6)!important}
+.leaflet-popup-tip{background:var(--dark)!important}
+.leaflet-popup-content{margin:12px 13px!important;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}
+.pu-tit{font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-weight:700;font-size:15px;color:var(--p);margin-bottom:5px}
+.pu-d{font-size:12px;color:#aaa;margin-bottom:3px}
+.pu-btn{background:var(--p);color:var(--dark);border:none;padding:7px 13px;border-radius:8px;font-weight:700;font-size:12px;margin-top:7px;cursor:pointer;width:100%;font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;letter-spacing:.5px}
+.pu-btn-d{background:rgba(231,76,60,.12);color:var(--err);border:1px solid var(--err);margin-top:5px}
+
+.empty{color:#666;font-size:13px;text-align:center;padding:40px 20px;line-height:1.6}
+
+/* MapLibre popup dark theme */
+.maplibregl-popup-content{background:#242424!important;border-radius:12px!important;padding:12px 14px!important;box-shadow:0 8px 32px rgba(0,0,0,.6)!important;border:1px solid #3a3a3a!important}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:#242424!important}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip{border-bottom-color:#242424!important}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip{border-right-color:#242424!important}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip{border-left-color:#242424!important}
+.maplibregl-popup-close-button{color:#666!important;font-size:18px!important;right:6px!important;top:4px!important}
+.maplibregl-popup-close-button:hover{color:#fff!important;background:none!important}
+.toast{position:fixed;top:calc(var(--st) + 14px);left:50%;transform:translateX(-50%) translateY(-80px);background:var(--d3);border:1px solid var(--p);color:var(--w);padding:11px 18px;border-radius:11px;font-size:13px;font-weight:600;z-index:9999;transition:transform .28s ease;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+#confirmBar{display:none;position:absolute;bottom:90px;left:50%;transform:translateX(-50%);
+  background:var(--dark);border:1px solid var(--p);border-radius:16px;
+  padding:10px 14px;z-index:410;align-items:center;gap:10px;
+  box-shadow:0 4px 18px rgba(0,0,0,.6);white-space:nowrap}
+#confirmBar.show{display:flex !important}
+</style>
+<script></script>
+</head>
+<body>
+
+<!-- ─── AUTH ─── -->
+<div id="auth-screen">
+  <div class="auth-logo">SALESPRO</div>
+  <div class="auth-sub">Field Sales CRM</div>
+  <div class="auth-card">
+    <div class="atabs">
+      <button class="atab on" onclick="authTab('login')">Sign In</button>
+      <button class="atab" onclick="authTab('signup')">Sign Up</button>
+    </div>
+    <div id="authLogin">
+      <div class="fg"><label class="fl">Email</label><input class="fi" id="liEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" id="liPass" type="password" placeholder="••••••••"></div>
+      <div style="margin-top:14px"><button class="btn btn-p" style="width:100%" onclick="doLogin()">Sign In</button></div>
+      <div style="color:#888;font-size:11px;text-align:center;margin-top:12px">Admin default: admin@salespro.app / admin123</div>
+    </div>
+    <div id="authSignup" style="display:none">
+      <div class="fg"><label class="fl">First Name *</label><input class="fi" id="suFirst" placeholder="First"></div>
+      <div class="fg"><label class="fl">Last Name</label><input class="fi" id="suLast" placeholder="Last"></div>
+      <div class="fg"><label class="fl">Email *</label><input class="fi" id="suEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+      <div class="fg"><label class="fl">Password * (min 6)</label><input class="fi" id="suPass" type="password" placeholder="Min 6 characters"></div>
+      <div style="margin-top:14px"><button class="btn btn-p" style="width:100%" onclick="doSignup()">Create Account</button></div>
+    </div>
+    <div id="authErr" style="color:var(--err);font-size:12px;text-align:center;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<!-- ─── MAP PAGE ─── -->
+<div id="map-pg" class="pg">
+  <div id="map"></div>
+  <div id="mapFallback" style="display:none;position:absolute;inset:0;z-index:2;background:#1a1a1a;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center">
+    <div style="font-size:40px">🗺️</div>
+    <div style="font-family:'Rajdhani','Arial Narrow',Arial,sans-serif;font-size:20px;font-weight:700;color:#38b6ff">Map Requires Internet</div>
+    <div style="font-size:13px;color:#888;line-height:1.6">Open this file in Safari while connected to Wi-Fi or cellular data to load the map.</div>
+    <div style="font-size:12px;color:#666">All other features (Leads, Schedule, Admin) work offline.</div>
+  </div>
+  <div class="mode-bar" id="modeBar">📍 Tap to place · Drag to reposition</div>
+  <!-- confirm bar shown when pin is staged for dragging -->
+  <div id="confirmBar">
+    <span style="font-size:12px;color:var(--w)">Drag to reposition</span>
+    <button onclick="confirmPinDrop()" style="background:var(--p);color:var(--dark);border:none;padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif">Confirm ✓</button>
+    <button onclick="cancelPinDrop()" style="background:var(--d3);color:#aaa;border:none;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif">✕ Cancel</button>
+  </div>
+  <!-- zone toolbar (top-left) -->
+  <div class="zone-bar" id="zoneBar">
+    <h3>🗺 Draw Zone</h3>
+    <div style="font-size:11px;color:#aaa">Tap corners on map</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="zSwatches"></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Assign Rep</label><select class="fi" id="zRepSel" style="font-size:12px;padding:7px 10px"></select></div>
+    <button class="zb-btn" style="background:var(--p);color:var(--dark)" onclick="finishZone()">✓ Save Zone</button>
+    <button class="zb-btn" style="background:var(--d3);color:#aaa" onclick="cancelZone()">✕ Cancel</button>
+  </div>
+  <!-- right controls -->
+  <div class="mc">
+    <div class="mfab padd" id="addPinFab" onclick="togglePinMode()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    </div>
+    <div class="mfab" onclick="locateMe()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    </div>
+    <div class="mfab" id="northBtn" onclick="orientNorth()" title="Orient North">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <div class="mfab" id="mapStyleBtn" onclick="cycleMapStyle()" title="Toggle Map Style">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M2 8l5 4 4-4 5 3 4-3"/></svg>
+    </div>
+    <div class="mfab" id="darkModeBtn" onclick="toggleMapDark()" title="Toggle Dark Mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </div>
+    <div class="mfab" id="zToggleBtn" onclick="toggleZones()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
+    </div>
+    <div class="mfab" onclick="openO('legendOv')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+    </div>
+  </div>
+  <!-- draw zone fab (admin only) -->
+  <div class="draw-zone-fab" id="drawZoneFab" onclick="startZoneDraw()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/></svg>
+    Draw Zone
+  </div>
+  <!-- pin palette -->
+  <div class="pin-palette" id="pinPalette">
+    <div class="ppt">Select Pin Status</div>
+    <div class="ppo" onclick="pickStatus('not-home')"><div class="ppd s-nh">🏠</div><span>Not Home</span></div>
+    <div class="ppo" onclick="pickStatus('not-interested')"><div class="ppd s-ni">🚫</div><span>Not Interested</span></div>
+    <div class="ppo" onclick="pickStatus('callback')"><div class="ppd s-cb">📞</div><span>Callback</span></div>
+    <div class="ppo" onclick="pickStatus('quote')"><div class="ppd s-qt">📋</div><span>Quote</span></div>
+    <div class="ppo" onclick="pickStatus('appointment')"><div class="ppd s-ap">✅</div><span>Appointment</span></div>
+    <div class="ppo" onclick="pickStatus('dnk')"><div class="ppd s-dk">🚪</div><span>DNK</span></div>
+  </div>
+</div>
+
+<!-- ─── HOME PAGE ─── -->
+<div id="home-pg" class="pg">
+  <div class="ph">
+    <div class="ph-row">
+      <div><h1>DASHBOARD</h1><p id="hGreet">Welcome back</p></div>
+      <div class="uchip" id="hChip"><div class="udot"></div><span id="hName">User</span></div>
+    </div>
+  </div>
+  <div class="scroll" style="padding:14px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <div class="mcard hi"><div class="ml">Revenue</div><div class="mv" id="mRev">$0</div><div class="ms">All time</div></div>
+      <div class="mcard"><div class="ml">Jobs Booked</div><div class="mv" id="mJobs">0</div><div class="ms">All time</div></div>
+      <div class="mcard"><div class="ml">Doors Knocked</div><div class="mv" id="mDoors">0</div><div class="ms">Total pins</div></div>
+      <div class="mcard"><div class="ml">Conversion</div><div class="mv" id="mConv">0%</div><div class="ms">Appts / Knocks</div></div>
+    </div>
+    <div><div class="sec">Pin Breakdown</div><div id="pinBD" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div></div>
+    <div><div class="sec">Recent Activity</div><div id="actList"></div></div>
+    <div style="height:10px"></div>
+  </div>
+</div>
+
+<!-- ─── LEADS PAGE ─── -->
+<div id="leads-pg" class="pg" style="position:relative">
+  <div class="ph"><h1>LEADS</h1><p>Contacts &amp; appointments</p></div>
+  <div style="padding:10px 16px 0;flex-shrink:0">
+    <div class="sbar">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search leads…" id="lSearch" oninput="renderLeads()">
+    </div>
+    <div class="fchips">
+      <div class="fchip on" data-f="all" onclick="setLF(this)">All</div>
+      <div class="fchip" data-f="appointment" onclick="setLF(this)">Appointments</div>
+      <div class="fchip" data-f="sale" onclick="setLF(this)">Sales</div>
+      <div class="fchip" data-f="quote" onclick="setLF(this)">Quotes</div>
+      <div class="fchip" data-f="callback" onclick="setLF(this)">Callbacks</div>
+    </div>
+  </div>
+  <div class="scroll" style="padding:12px 16px" id="leadsList"></div>
+  <button class="fab" onclick="openAddLead()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- ─── SCHEDULE PAGE ─── -->
+<div id="schedule-pg" class="pg">
+  <div class="ph"><h1>SCHEDULE</h1><p>Team calendar</p></div>
+  <div style="padding:10px 16px 0;flex-shrink:0">
+    <div class="vtabs">
+      <button class="vtab on" data-v="day" onclick="setCV(this)">Day</button>
+      <button class="vtab" data-v="week" onclick="setCV(this)">Week</button>
+      <button class="vtab" data-v="month" onclick="setCV(this)">Month</button>
+    </div>
+    <div class="cn">
+      <button class="cnbtn" onclick="navCal(-1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="cntit" id="calTit"></div>
+      <button class="cnbtn" onclick="navCal(1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </div>
+  <div class="scroll" style="padding:0 16px 80px" id="calBody"></div>
+  <button class="fab" onclick="openAddEvent()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- ─── LEADERBOARD PAGE ─── -->
+<div id="leaderboard-pg" class="pg">
+  <div class="ph"><h1>LEADERBOARD</h1><p>Team performance</p></div>
+  <div class="scroll" style="padding:14px">
+    <div class="lb-pod" id="lbPod"></div>
+    <div id="lbList"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ─── ADMIN PAGE ─── -->
+<div id="admin-pg" class="pg">
+  <div class="ph"><h1>ADMIN</h1><p>Users, zones &amp; permissions</p></div>
+  <div class="scroll" style="padding:14px" id="adminScroll"></div>
+</div>
+
+<!-- ─── BOTTOM NAV ─── -->
+<nav id="nav">
+  <button class="nb on" data-pg="map" onclick="goTo('map')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="3"/></svg>
+    <span>Map</span>
+  </button>
+  <button class="nb" data-pg="home" onclick="goTo('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="nb" data-pg="leads" onclick="goTo('leads')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>Leads</span>
+  </button>
+  <button class="nb" data-pg="schedule" onclick="goTo('schedule')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>Schedule</span>
+  </button>
+  <button class="nb" data-pg="leaderboard" onclick="goTo('leaderboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>Ranks</span>
+  </button>
+  <button class="nb" data-pg="admin" onclick="goTo('admin')" id="adminBtn" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11l2 2 4-4"/></svg>
+    <span>Admin</span>
+  </button>
+</nav>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- Universal Pin Details Modal -->
+<div class="ov" id="pinDetailOv">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="mtit" id="pdTit">📍 Pin Details</div>
+    <div class="fg"><label class="fl">Address</label><input class="fi" id="pdAddr" readonly></div>
+    <div class="fg"><label class="fl">Client Name *</label><input class="fi" id="pdName" placeholder="Full name"></div>
+    <div class="fg"><label class="fl">Phone</label><input class="fi" id="pdPhone" type="tel" placeholder="(555) 000-0000"></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="pdEmail" type="email" placeholder="client@email.com"></div>
+    <!-- Date/time row — shown only for appointments -->
+    <div class="fg" id="pdDateRow">
+      <label class="fl">Appointment Date &amp; Time *</label>
+      <!-- Custom date/time picker trigger -->
+      <div id="pdDateDisplay" onclick="openDatePicker()" style="width:100%;background:var(--d2);border:1px solid var(--d4);border-radius:10px;padding:11px 13px;color:var(--w);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+        <span id="pdDateLabel" style="color:#555">Tap to select date &amp; time</span>
+        <span style="font-size:16px">📅</span>
+      </div>
+      <input type="hidden" id="pdDate">
+    </div>
+    <div class="fg"><label class="fl">Details / Notes</label><textarea class="fi" id="pdDetails" placeholder="Describe the job, notes…" rows="3" style="resize:none;height:auto"></textarea></div>
+    <div class="fg"><label class="fl">Value ($) *</label><input class="fi" id="pdValue" type="number" placeholder="0.00" inputmode="decimal"></div>
+    <div class="fg"><label class="fl">Assigned Rep</label><select class="fi" id="pdRep"></select></div>
+    <div class="brow">
+      <button class="btn btn-s" onclick="closeO('pinDetailOv')">Cancel</button>
+      <button class="btn btn-p" id="pdSaveBtn" onclick="savePinDetail()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Date/Time Picker Modal -->
+<div class="ov" id="dtPickerOv" style="align-items:center;justify-content:center">
+  <div class="sheet" style="border-radius:20px;max-width:360px;margin:auto;padding-bottom:20px">
+    <div class="handle"></div>
+    <div class="mtit" style="text-align:center">Select Date &amp; Time</div>
+    <!-- Month nav -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <button onclick="dtNavMonth(-1)" style="background:var(--d3);border:none;color:var(--w);width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer">‹</button>
+      <div id="dtMonthLabel" style="font-family:'Rajdhani','Arial Narrow',Arial,sans-serif;font-size:16px;font-weight:700;color:var(--p)"></div>
+      <button onclick="dtNavMonth(1)" style="background:var(--d3);border:none;color:var(--w);width:34px;height:34px;border-radius:9px;font-size:18px;cursor:pointer">›</button>
+    </div>
+    <!-- Day grid -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:12px" id="dtDayGrid"></div>
+    <!-- Time selectors -->
+    <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:14px">
+      <select id="dtHour" class="fi" style="width:80px;text-align:center;padding:10px 8px"></select>
+      <span style="font-size:20px;font-weight:700;color:var(--p)">:</span>
+      <select id="dtMin" class="fi" style="width:80px;text-align:center;padding:10px 8px"></select>
+      <select id="dtAmPm" class="fi" style="width:72px;text-align:center;padding:10px 8px">
+        <option>AM</option><option>PM</option>
+      </select>
+    </div>
+    <div class="brow">
+      <button class="btn btn-s" onclick="closeO('dtPickerOv')">Cancel</button>
+      <button class="btn btn-p" onclick="confirmDateTime()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Lead -->
+<div class="ov" id="addLeadOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit">➕ Add Lead</div>
+    <div class="fg"><label class="fl">Name *</label><input class="fi" id="nlName" placeholder="Full name"></div>
+    <div class="fg"><label class="fl">Phone</label><input class="fi" id="nlPhone" type="tel"></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="nlEmail" type="email"></div>
+    <div class="fg"><label class="fl">Address</label><input class="fi" id="nlAddr" placeholder="Street address"></div>
+    <div class="fg"><label class="fl">Status</label>
+      <select class="fi" id="nlStatus">
+        <option value="callback">Callback</option><option value="quote">Quote</option>
+        <option value="appointment">Appointment</option><option value="sale">Sale</option>
+        <option value="not-interested">Not Interested</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Job Value ($)</label><input class="fi" id="nlValue" type="number" placeholder="0.00"></div>
+    <div class="fg"><label class="fl">Assigned Rep</label><select class="fi" id="nlRep"></select></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="nlNotes" placeholder="Notes…"></div>
+    <div class="brow"><button class="btn btn-s" onclick="closeO('addLeadOv')">Cancel</button><button class="btn btn-p" onclick="saveNewLead()">Add Lead</button></div>
+  </div>
+</div>
+
+<!-- Lead Detail -->
+<div class="ov" id="ldOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit" id="ldTit">Lead</div>
+    <div id="ldBody"></div>
+    <div class="brow" id="ldBtns"></div>
+  </div>
+</div>
+
+<!-- Add/Edit Event -->
+<div class="ov" id="evOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit" id="evTit">📅 Add Event</div>
+    <div class="fg"><label class="fl">Title *</label><input class="fi" id="evTitle" placeholder="Event title"></div>
+    <div class="fg"><label class="fl">Start *</label><input class="fi" id="evStart" type="datetime-local"></div>
+    <div class="fg"><label class="fl">End</label><input class="fi" id="evEnd" type="datetime-local"></div>
+    <div class="fg"><label class="fl">Type</label>
+      <select class="fi" id="evType">
+        <option value="job">Job / Appointment</option><option value="meeting">Team Meeting</option>
+        <option value="followup">Follow-Up</option><option value="other">Other</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Linked Client</label><select class="fi" id="evClient"></select></div>
+    <div class="fg"><label class="fl">Assigned Rep</label><select class="fi" id="evRep"></select></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="evNotes" placeholder="Details…"></div>
+    <div class="brow" id="evBtns"></div>
+  </div>
+</div>
+
+<!-- User Switcher -->
+<div class="ov" id="userOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit">👤 Switch User</div>
+    <div id="userOvList"></div>
+    <div class="brow">
+      <button class="btn btn-d" onclick="logout()">Sign Out</button>
+      <button class="btn btn-s" onclick="closeO('userOv')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Permissions Edit -->
+<div class="ov" id="permOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit" id="permTit">Edit Permissions</div>
+    <div id="permBody"></div>
+    <div class="brow"><button class="btn btn-s" onclick="closeO('permOv')">Cancel</button><button class="btn btn-p" onclick="savePerms()">Save</button></div>
+  </div>
+</div>
+
+<!-- Zone Edit -->
+<div class="ov" id="zoneEditOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit">🗺 Edit Zone</div>
+    <div class="fg"><label class="fl">Zone Name</label><input class="fi" id="zeNm" placeholder="Zone name"></div>
+    <div class="fg"><label class="fl">Assign Rep</label><select class="fi" id="zeRep"></select></div>
+    <div class="fg"><label class="fl">Colour</label><div style="display:flex;gap:8px;margin-top:4px" id="zeSwatches"></div></div>
+    <div class="brow">
+      <button class="btn btn-d" onclick="deleteZone()">Delete</button>
+      <button class="btn btn-s" onclick="closeO('zoneEditOv')">Cancel</button>
+      <button class="btn btn-p" onclick="saveZoneEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="ov" id="legendOv">
+  <div class="sheet">
+    <div class="handle"></div><div class="mtit">🗺 Map Legend</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-nh" style="width:30px;height:30px;border-radius:50%">🏠</div><span>Not Home</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-ni" style="width:30px;height:30px;border-radius:50%">🚫</div><span>Not Interested</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-cb" style="width:30px;height:30px;border-radius:50%">📞</div><span>Callback</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-qt" style="width:30px;height:30px;border-radius:50%">📋</div><span>Gave Quote</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-ap" style="width:30px;height:30px;border-radius:50%">✅</div><span>Appointment</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-sl" style="width:30px;height:30px;border-radius:50%">💰</div><span>Closed Sale</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><div class="ppd s-dk" style="width:30px;height:30px;border-radius:50%">🚪</div><span>Do Not Knock</span></div>
+    </div>
+    <div class="brow"><button class="btn btn-s" onclick="closeO('legendOv')">Close</button></div>
+  </div>
+</div>
+
+<!-- Pin Status Picker -->
+<div class="ov" id="pinStatusOv">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="mtit">Change Pin Status</div>
+    <div id="pinStatusList"></div>
+    <div class="brow"><button class="btn btn-s" onclick="closeO('pinStatusOv')">Cancel</button></div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="ov" id="confirmOv">
+  <div class="sheet" style="max-height:40dvh">
+    <div class="handle"></div>
+    <div class="mtit" id="confirmTit" style="font-size:17px">Are you sure?</div>
+    <div id="confirmMsg" style="font-size:13px;color:#aaa;margin-bottom:4px"></div>
+    <div class="brow" style="margin-top:18px">
+      <button class="btn btn-s" onclick="closeO('confirmOv')">Cancel</button>
+      <button class="btn btn-d" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin PIN gate -->
+<div class="ov" id="adminPinOv">
+  <div class="sheet" style="max-height:44dvh">
+    <div class="handle"></div>
+    <div class="mtit">🔐 Admin Access</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:14px">Enter your admin PIN to continue.</div>
+    <div class="fg">
+      <label class="fl">Admin PIN</label>
+      <input class="fi" id="adminPinInput" type="password" inputmode="numeric" placeholder="••••" style="font-size:24px;letter-spacing:6px;text-align:center">
+    </div>
+    <div id="adminPinErr" style="color:var(--err);font-size:12px;text-align:center;margin-top:6px;display:none">Incorrect PIN</div>
+    <div class="brow" style="margin-top:14px">
+      <button class="btn btn-s" onclick="closeO('adminPinOv')">Cancel</button>
+      <button class="btn btn-p" id="adminPinOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sync status badge -->
+<div id="syncBadge" style="display:none;position:fixed;top:calc(var(--st)+10px);right:12px;z-index:2000;width:10px;height:10px;border-radius:50%;box-shadow:0 0 6px rgba(0,0,0,.5)"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════
+const SB_URL = 'https://gmqaesvxdaipmfvtiwdx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtcWFlc3Z4ZGFpcG1mdnRpd2R4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyOTg5MTksImV4cCI6MjA5Mjg3NDkxOX0.XaVW2LjdJZ8guJEqOgrID0eY0a7aXZ2_VnFteEQdUDo';
+const ADMIN_SECRET_PIN = '0000'; // CHANGE THIS — only you should know it
+
+// Flag: set to false until valid key is confirmed working
+let SB_CONNECTED = false;
+
+async function sbReq(table, method, body, query){
+  if(!SB_URL||!SB_KEY) return null;
+  const opts = {
+    method: method||'GET',
+    headers:{
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer '+SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST'?'return=representation':'',
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const url = SB_URL+'/rest/v1/'+table+(query?'?'+query:'');
+  try{
+    const r = await fetch(url, opts);
+    if(!r.ok){
+      const t=await r.text();
+      console.warn('SB',method,table,r.status,t.slice(0,100));
+      return null;
+    }
+    SB_CONNECTED = true;
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : null;
+  }catch(e){
+    console.warn('SB network error:', e.message);
+    return null;
+  }
+}
+
+const sb = {
+  all: (t)       => sbReq(t,'GET',null,'select=*&order=created_at.asc'),
+  upsert: (t,row)=> sbReq(t,'POST',row,'on_conflict=id'),
+  patch: (t,id,p)=> sbReq(t,'PATCH',p,'id=eq.'+id),
+  del: (t,id)    => sbReq(t,'DELETE',null,'id=eq.'+id),
+  delWhere:(t,c,v)=>sbReq(t,'DELETE',null,c+'=eq.'+v),
+};
+
+// ═══════════════════════════════════
+// LOCAL CACHE + STATE
+// ═══════════════════════════════════
+const S={
+  g(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  s(k,v){localStorage.setItem(k,JSON.stringify(v))},
+  d(k){localStorage.removeItem(k)}
+};
+
+let users   = S.g('sp_users')  || [];
+let pins    = S.g('sp_pins')   || [];
+let leads   = S.g('sp_leads')  || [];
+let events  = S.g('sp_events') || [];
+let zones   = S.g('sp_zones')  || [];
+let acts    = S.g('sp_acts')   || [];
+let session = S.g('sp_sess')   || null;
+
+function saveLocal(){
+  S.s('sp_users',users); S.s('sp_pins',pins); S.s('sp_leads',leads);
+  S.s('sp_events',events); S.s('sp_zones',zones); S.s('sp_acts',acts);
+}
+
+// ── DB <> App field mappers ──────────────────────────────────
+function dbToUser(r){ return {id:r.id,first:r.first,last:r.last,email:r.email,pass:r.pass,role:r.role,perms:r.perms||{}}; }
+function dbToPin(r){  return {id:r.id,lat:r.lat,lng:r.lng,status:r.status,address:r.address,repId:r.rep_id,createdAt:r.created_at}; }
+function dbToLead(r){ return {id:r.id,pinId:r.pin_id,name:r.name,phone:r.phone,email:r.email,address:r.address,status:r.status,details:r.details,value:r.value,repId:r.rep_id,notes:r.notes,createdAt:r.created_at}; }
+function dbToEv(r){   return {id:r.id,title:r.title,start:r.start_time,end:r.end_time,type:r.type,clientId:r.client_id,repId:r.rep_id,notes:r.notes,value:r.value}; }
+function userToDb(u){ return {id:u.id,first:u.first,last:u.last,email:u.email,pass:u.pass,role:u.role,perms:u.perms}; }
+function pinToDb(p){  return {id:p.id,lat:p.lat,lng:p.lng,status:p.status,address:p.address,rep_id:p.repId,created_at:p.createdAt}; }
+function leadToDb(l){ return {id:l.id,pin_id:l.pinId,name:l.name,phone:l.phone,email:l.email,address:l.address,status:l.status,details:l.details,value:l.value,rep_id:l.repId,notes:l.notes,created_at:l.createdAt}; }
+function evToDb(e){   return {id:e.id,title:e.title,start_time:e.start,end_time:e.end,type:e.type,client_id:e.clientId,rep_id:e.repId,notes:e.notes,value:e.value,created_at:e.createdAt||new Date().toISOString()}; }
+
+// ── Pull all data from Supabase → refresh UI ─────────────────
+async function pullAll(){
+  showSync('syncing');
+  try{
+    const [u,p,l,e,z,a] = await Promise.all([
+      sb.all('sp_users'), sb.all('sp_pins'), sb.all('sp_leads'),
+      sb.all('sp_events'), sb.all('sp_zones'), sb.all('sp_acts'),
+    ]);
+    // Only update if we got real data back (never wipe on empty response)
+    if(u && u.length > 0) users  = u.map(dbToUser);
+    if(p) pins   = p.map(dbToPin);
+    if(l) leads  = l.map(dbToLead);
+    if(e) events = e.map(dbToEv);
+    if(z && z.length > 0) zones  = z;
+    if(a) acts   = a.map(x=>({...x,time:x.created_at})).reverse();
+    // Always ensure admin exists locally
+    if(!users.find(x=>x.id==='admin')){
+      const admin={id:'admin',first:'Admin',last:'',email:'admin@salespro.app',
+        pass:'admin123',role:'admin',created_at:new Date().toISOString(),
+        perms:{pins:true,delPins:true,editPins:true,leads:true,delLeads:true,
+               events:true,delEvents:true,zones:true,leaderboard:true}};
+      users.unshift(admin);
+    }
+    saveLocal();
+    refreshCurrentPage();
+    showSync('ok');
+  }catch(err){
+    console.warn('pullAll failed:',err);
+    showSync('err');
+  }
+}
+
+function refreshCurrentPage(){
+  if(curPg==='map'){ renderPins(); renderZones(); }
+  else if(curPg==='home') refreshHome();
+  else if(curPg==='leads') renderLeads();
+  else if(curPg==='schedule') renderCal();
+  else if(curPg==='leaderboard') renderLB();
+  else if(curPg==='admin') renderAdmin();
+}
+
+let syncTimer;
+function showSync(state){
+  const b=document.getElementById('syncBadge'); if(!b)return;
+  b.style.display='flex';
+  b.style.background=state==='ok'?'#2ecc71':state==='err'?'#e74c3c':'#f39c12';
+  clearTimeout(syncTimer);
+  if(state==='ok')syncTimer=setTimeout(()=>b.style.display='none',2000);
+}
+
+// Poll every 30s + on tab focus
+let pollInterval;
+function startPolling(){ pollInterval=setInterval(()=>{if(!document.hidden)pullAll()},30000); }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pullAll()});
+
+// ═══════════════════════════════════
+// AUTH
+// ═══════════════════════════════════
+function authTab(t){
+  document.querySelectorAll('.atab').forEach((b,i)=>b.classList.toggle('on',i===(t==='login'?0:1)));
+  document.getElementById('authLogin').style.display=t==='login'?'':'none';
+  document.getElementById('authSignup').style.display=t==='signup'?'':'none';
+  document.getElementById('authErr').style.display='none';
+}
+function authErr(m,info){
+  const e=document.getElementById('authErr');
+  e.textContent=m; e.style.display='block';
+  e.style.color=info?'#aaa':'var(--err)';
+}
+function doLogin(){
+  const email = document.getElementById('liEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('liPass').value;
+  if(!email||!pass){authErr('Fill all fields');return}
+
+  // Always check local cache (instant, no network needed)
+  const u = users.find(x=>x.email.toLowerCase()===email && x.pass===pass);
+
+  if(!u){
+    authErr('Account not found. Sign up or check credentials.');
+    return;
+  }
+
+  document.getElementById('authErr').style.display='none';
+  session = u.id;
+  S.s('sp_sess', session);
+
+  if(u.role==='admin'){
+    openAdminPinPrompt(()=>{
+      launchApp();
+      pullAll().catch(()=>{});
+      startPolling();
+    });
+    return;
+  }
+  launchApp();
+  pullAll().catch(()=>{});
+  startPolling();
+}
+function doSignup(){
+  const first = document.getElementById('suFirst').value.trim();
+  const last  = document.getElementById('suLast').value.trim();
+  const email = document.getElementById('suEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('suPass').value;
+  if(!first||!email||!pass){authErr('Fill required fields');return}
+  if(pass.length<6){authErr('Password min 6 chars');return}
+  if(users.find(u=>u.email.toLowerCase()===email)){authErr('Email already registered');return}
+
+  const u = {
+    id:'u'+Date.now(), first, last, email, pass, role:'rep',
+    created_at: new Date().toISOString(),
+    perms:{pins:true,delPins:false,editPins:true,leads:true,delLeads:false,
+           events:true,delEvents:false,zones:false,leaderboard:true}
+  };
+  users.push(u);
+  session = u.id;
+  S.s('sp_sess', session);
+  saveLocal();
+  document.getElementById('authErr').style.display='none';
+  launchApp();
+  // Push to Supabase in background
+  sb.upsert('sp_users', userToDb(u)).catch(()=>{});
+  pullAll().catch(()=>{});
+  startPolling();
+}
+function logout(){
+  session=null;S.d('sp2_sess');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('authErr').style.display='none';
+  ['liEmail','liPass'].forEach(id=>document.getElementById(id).value='');
+}
+function launchApp(){
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('adminBtn').style.display=isAdmin()?'':'none';
+  document.getElementById('drawZoneFab').classList.toggle('show',isAdmin());
+  const u=me();
+  document.getElementById('hName').textContent=u?u.first:'User';
+  document.getElementById('hGreet').textContent='Welcome back, '+uFull(u);
+  goTo('map');
+}
+
+// ── Admin PIN gate ─────────────────────────────────────────
+function openAdminPinPrompt(onSuccess){
+  document.getElementById('adminPinErr').style.display='none';
+  document.getElementById('adminPinInput').value='';
+  document.getElementById('adminPinOkBtn').onclick = ()=>{
+    const val = document.getElementById('adminPinInput').value.trim();
+    if(val === ADMIN_SECRET_PIN){
+      closeO('adminPinOv');
+      onSuccess();
+    } else {
+      document.getElementById('adminPinErr').style.display='block';
+    }
+  };
+  openO('adminPinOv');
+}
+
+
+// ═══════════════════════════════════
+// NAVIGATION — clean page switching, no data bleed
+// ═══════════════════════════════════
+let curPg='map';
+function goTo(pg){
+  // 1. hide all pages
+  document.querySelectorAll('.pg').forEach(el=>el.classList.remove('on'));
+  // 2. deactivate all nav buttons
+  document.querySelectorAll('.nb').forEach(el=>el.classList.remove('on'));
+  // 3. activate target page
+  document.getElementById(pg+'-pg').classList.add('on');
+  // 4. activate matching nav button
+  const nb=document.querySelector(`.nb[data-pg="${pg}"]`);
+  if(nb)nb.classList.add('on');
+  curPg=pg;
+  // 5. refresh page data (each function reads from global arrays independently)
+  if(pg==='map'){
+    if(!mapInited){
+      setTimeout(initMap, 50);
+    } else {
+      setTimeout(()=>map&&map.resize(),100);
+    }
+  }
+  else if(pg==='home')refreshHome();
+  else if(pg==='leads'){document.getElementById('lSearch').value='';renderLeads();}
+  else if(pg==='schedule')renderCal();
+  else if(pg==='leaderboard')renderLB();
+  else if(pg==='admin')renderAdmin();
+}
+
+// ═══════════════════════════════════
+// MAP — MapLibre GL (OpenFreeMap, no API key, cacheable)
+// ═══════════════════════════════════
+let map, mapInited=false;
+let pinMode=false, pendingLL=null, pendingPinId=null, pendingPinStatus=null;
+const MARKERS={};  // pinId -> maplibre Marker object
+
+const PC={
+  'not-home':{e:'🏠',c:'#7f8c8d',l:'Not Home'},
+  'not-interested':{e:'🚫',c:'#e74c3c',l:'Not Interested'},
+  'callback':{e:'📞',c:'#f39c12',l:'Callback'},
+  'quote':{e:'📋',c:'#3498db',l:'Gave Quote'},
+  'appointment':{e:'✅',c:'#2ecc71',l:'Appointment'},
+  'dnk':{e:'🚪',c:'#555',l:'Do Not Knock'},
+};
+const ZCOLS=['#38b6ff','#2ecc71','#f39c12','#e74c3c','#9b59b6','#1abc9c','#e91e63'];
+
+
+// Map style state
+const MAP_STYLES = {
+  dark:      'https://tiles.openfreemap.org/styles/liberty',
+  light:     'https://tiles.openfreemap.org/styles/bright',
+  satellite: 'https://api.maptiler.com/maps/satellite/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
+};
+// We'll use OSM raster as satellite fallback since MapTiler needs key
+const SATELLITE_TILES = 'https://{a-c}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
+let mapStyleMode = 'dark'; // dark | light | satellite
+let mapIsDark = true;
+
+function getStyleUrl(mode){
+  if(mode==='dark')   return 'https://tiles.openfreemap.org/styles/liberty';
+  if(mode==='light')  return 'https://tiles.openfreemap.org/styles/bright';
+  // satellite: raster style built inline
+  return null;
+}
+
+function initMap(){
+  const mapEl=document.getElementById('map');
+  const navH=document.getElementById('nav').offsetHeight||68;
+  mapEl.style.width=window.innerWidth+'px';
+  mapEl.style.height=(window.innerHeight-navH)+'px';
+
+  map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: [-122.4194, 37.7749],
+    zoom: 13,
+    attributionControl: false,
+  });
+
+  map.on('load', ()=>{
+    renderPins();
+    renderZones();
+    mapInited=true;
+    // update compass icon rotation when bearing changes
+    map.on('rotate',updateCompass);
+    navigator.geolocation.getCurrentPosition(p=>{
+      map.flyTo({center:[p.coords.longitude,p.coords.latitude],zoom:15});
+    },()=>{});
+  });
+
+  map.on('click', onMapTap);
+  map.on('error', ()=>{
+    document.getElementById('mapFallback').style.display='flex';
+  });
+}
+
+// ── Orient North ──────────────────────────────────────────────
+function orientNorth(){
+  map.easeTo({bearing:0, pitch:0, duration:400});
+}
+function updateCompass(){
+  const bearing = map.getBearing();
+  const btn = document.getElementById('northBtn');
+  if(btn) btn.style.transform = `rotate(${-bearing}deg)`;
+}
+
+// ── Toggle Dark Mode ─────────────────────────────────────────
+function toggleMapDark(){
+  if(mapStyleMode==='satellite') return; // satellite has its own look
+  mapIsDark = !mapIsDark;
+  mapStyleMode = mapIsDark ? 'dark' : 'light';
+  const btn = document.getElementById('darkModeBtn');
+  btn.style.color = mapIsDark ? 'var(--w)' : '#f39c12';
+  reloadMapStyle();
+}
+
+// ── Cycle Map Style: dark → light → satellite → dark ─────────
+function cycleMapStyle(){
+  const modes = ['dark','light','satellite'];
+  const idx = modes.indexOf(mapStyleMode);
+  mapStyleMode = modes[(idx+1)%3];
+  mapIsDark = mapStyleMode==='dark';
+  // Update button appearance
+  const btn = document.getElementById('mapStyleBtn');
+  const labels = {dark:'🌑', light:'🌤', satellite:'🛰'};
+  btn.title = {dark:'Street (Dark)', light:'Street (Light)', satellite:'Satellite'}[mapStyleMode];
+  document.getElementById('darkModeBtn').style.opacity = mapStyleMode==='satellite'?'0.3':'1';
+  reloadMapStyle();
+  toast({dark:'🌑 Dark map',light:'🌤 Light map',satellite:'🛰 Satellite view'}[mapStyleMode]);
+}
+
+function reloadMapStyle(){
+  if(mapStyleMode==='satellite'){
+    // Build a raster satellite style inline
+    const satStyle = {
+      version:8,
+      sources:{'sat':{type:'raster',
+        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        tileSize:256, attribution:'Esri'}},
+      layers:[{id:'sat-layer',type:'raster',source:'sat'}]
+    };
+    map.setStyle(satStyle);
+  } else {
+    map.setStyle(getStyleUrl(mapStyleMode));
+  }
+  // Re-render pins/zones after style loads
+  map.once('styledata',()=>{
+    // small delay to let style fully apply
+    setTimeout(()=>{renderPins();renderZones();},200);
+  });
+}
+
+function makePinEl(status){
+  const c=PC[status]||PC['not-home'];
+  const el=document.createElement('div');
+  el.style.cssText=`width:34px;height:34px;border-radius:50%;background:${c.c};display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.2);cursor:pointer`;
+  el.textContent=c.e;
+  return el;
+}
+
+// ── Draggable pin staging ──────────────────────────────────────
+let stagingMarker = null; // the draggable ghost pin before confirming
+let stagingStatus = null;
+
+function onMapTap(e){
+  if(zoneDrawing){addZonePt({lat:e.lngLat.lat,lng:e.lngLat.lng});return}
+  if(!pinMode)return;
+  // Place / move the staging marker
+  const ll={lat:e.lngLat.lat, lng:e.lngLat.lng};
+  showStagingPin(ll);
+}
+
+function showStagingPin(ll){
+  pendingLL = ll;
+  if(!stagingMarker){
+    // First tap — show palette to pick status
+    document.getElementById('pinPalette').classList.add('show');
+    document.getElementById('modeBar').classList.remove('show');
+  } else {
+    // Already staged — just move it
+    stagingMarker.setLngLat([ll.lng, ll.lat]);
+  }
+}
+
+function togglePinMode(){
+  if(!hasPerm('pins')){toast('⛔ No permission to add pins');return}
+  pinMode=!pinMode;
+  document.getElementById('addPinFab').className='mfab '+(pinMode?'pcancel':'padd');
+  if(pinMode){
+    document.getElementById('modeBar').classList.add('show');
+    toast('Tap map to place a pin');
+  } else {
+    cancelPinDrop();
+    document.getElementById('modeBar').classList.remove('show');
+    document.getElementById('pinPalette').classList.remove('show');
+    pendingLL=null;
+  }
+}
+
+function pickStatus(st){
+  document.getElementById('pinPalette').classList.remove('show');
+  if(!pendingLL)return;
+  stagingStatus = st;
+  // Create draggable staging marker
+  if(stagingMarker){ stagingMarker.remove(); stagingMarker=null; }
+  const c = PC[st]||PC['not-home'];
+  const el = document.createElement('div');
+  el.style.cssText=`width:38px;height:38px;border-radius:50%;background:${c.c};display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 0 4px rgba(255,255,255,.4),0 4px 12px rgba(0,0,0,.6);cursor:grab;border:3px solid white;`;
+  el.textContent = c.e;
+  el.title = 'Drag to reposition';
+  stagingMarker = new maplibregl.Marker({element:el, anchor:'center', draggable:true})
+    .setLngLat([pendingLL.lng, pendingLL.lat])
+    .addTo(map);
+  stagingMarker.on('dragstart',()=>{ el.style.cursor='grabbing'; el.style.transform='scale(1.2)'; });
+  stagingMarker.on('dragend',()=>{
+    el.style.cursor='grab'; el.style.transform='scale(1)';
+    const pos=stagingMarker.getLngLat();
+    pendingLL={lat:pos.lat, lng:pos.lng};
+  });
+  // Show confirm bar, hide mode bar
+  document.getElementById('modeBar').style.display='none';
+  document.getElementById('confirmBar').classList.add('show');
+}
+
+function confirmPinDrop(){
+  if(!stagingMarker||!pendingLL||!stagingStatus)return;
+  const ll=pendingLL;
+  const st=stagingStatus;
+  stagingMarker.remove(); stagingMarker=null; stagingStatus=null;
+  document.getElementById('confirmBar').classList.remove('show');
+  document.getElementById('modeBar').style.display='';
+  togglePinMode(); // turn off pin mode
+  reverseGeo(ll.lat,ll.lng).then(addr=>{
+    const pin={id:'pin'+Date.now(),lat:ll.lat,lng:ll.lng,status:st,
+               address:addr,repId:session,createdAt:new Date().toISOString()};
+    pins.push(pin); saveLocal(); addPinMark(pin); refreshHome();
+    // Sync pin to Supabase right away
+    sb.upsert('sp_pins', pinToDb(pin)).catch(e=>{});
+    // Open detail modal for all pin types
+    pendingPinId=pin.id; pendingPinStatus=st;
+    openPinDetail(addr, st);
+    logAct(PC[st].e+' '+PC[st].l+' pin', addr);
+  });
+}
+
+function cancelPinDrop(){
+  if(stagingMarker){stagingMarker.remove();stagingMarker=null;}
+  stagingStatus=null; pendingLL=null;
+  document.getElementById('confirmBar').classList.remove('show');
+  document.getElementById('modeBar').style.display='';
+  document.getElementById('pinPalette').classList.remove('show');
+  // Also exit pin mode
+  if(pinMode){
+    pinMode=false;
+    document.getElementById('addPinFab').className='mfab padd';
+    document.getElementById('modeBar').classList.remove('show');
+  }
+}
+
+function addPinMark(pin){
+  const c=PC[pin.status]||PC['not-home'];
+  const ld=leads.find(l=>l.pinId===pin.id);
+  const rep=users.find(u=>u.id===pin.repId);
+  const el=makePinEl(pin.status);
+
+  const popup=new maplibregl.Popup({offset:20,closeButton:true,maxWidth:'250px'});
+
+  // Build popup HTML — NO inline onclick, we wire listeners after open
+  function buildPopupHTML(){
+    return `<div style="font-family:system-ui;padding:2px" id="pu-${pin.id}">
+      <div style="font-weight:700;color:#38b6ff;margin-bottom:5px;font-size:14px">${c.e} ${c.l}</div>
+      <div style="font-size:11px;color:#aaa;margin-bottom:2px">📍 ${pin.address||'Unknown'}</div>
+      ${ld?`<div style="font-size:11px;color:#aaa;margin-bottom:2px">👤 ${ld.name||''}</div>`:''}
+      ${ld&&ld.phone?`<div style="font-size:11px;color:#aaa;margin-bottom:2px">📱 ${ld.phone}</div>`:''}
+      ${ld&&ld.value?`<div style="font-size:11px;color:#aaa;margin-bottom:4px">💵 $${Number(ld.value).toLocaleString()}</div>`:''}
+      ${rep?`<div style="font-size:11px;color:#aaa;margin-bottom:4px">🧑 ${uFull(rep)}</div>`:''}
+      ${hasPerm('editPins')?`<button id="pu-status-${pin.id}" style="background:#38b6ff;color:#1a1a1a;border:none;padding:8px;border-radius:7px;font-weight:700;width:100%;margin-top:4px;cursor:pointer;font-size:12px">Change Status</button>`:''}
+      ${hasPerm('delPins')?`<button id="pu-del-${pin.id}" style="background:transparent;color:#e74c3c;border:1px solid #e74c3c;padding:8px;border-radius:7px;font-weight:700;width:100%;margin-top:4px;cursor:pointer;font-size:12px">Delete Pin</button>`:''}
+    </div>`;
+  }
+
+  popup.setHTML(buildPopupHTML());
+
+  // Wire button listeners every time popup opens
+  popup.on('open', ()=>{
+    const statusBtn = document.getElementById(`pu-status-${pin.id}`);
+    const delBtn    = document.getElementById(`pu-del-${pin.id}`);
+    if(statusBtn) statusBtn.addEventListener('click', ()=>{
+      popup.remove();
+      window.openPinStatus(pin.id);
+    });
+    if(delBtn) delBtn.addEventListener('click', ()=>{
+      popup.remove();
+      window.confirmDelPin(pin.id);
+    });
+  });
+
+  const marker=new maplibregl.Marker({element:el,anchor:'center'})
+    .setLngLat([pin.lng,pin.lat])
+    .setPopup(popup)
+    .addTo(map);
+
+  el.addEventListener('click', e=>{
+    e.stopPropagation();
+    // Close any other open popups first
+    Object.values(MARKERS).forEach(m=>{ if(m!==marker && m.getPopup().isOpen()) m.getPopup().remove(); });
+    marker.togglePopup();
+  });
+
+  MARKERS[pin.id]=marker;
+}
+
+function renderPins(){
+  Object.values(MARKERS).forEach(m=>m.remove());
+  Object.keys(MARKERS).forEach(k=>delete MARKERS[k]);
+  pins.forEach(p=>addPinMark(p));
+}
+
+window.openPinStatus=function(id){
+  if(MARKERS[id])MARKERS[id].getPopup().remove();
+  const pin=pins.find(p=>p.id===id);if(!pin)return;
+  document.getElementById('pinStatusList').innerHTML=Object.entries(PC).map(([k,v])=>`
+    <div onclick="window.applyPinStatus('${id}','${k}')" style="display:flex;align-items:center;gap:12px;padding:11px;border-radius:11px;cursor:pointer;background:${pin.status===k?'var(--pdim)':'transparent'};border:1px solid ${pin.status===k?'var(--p)':'transparent'};margin-bottom:6px">
+      <div style="width:28px;height:28px;border-radius:50%;background:${v.c};display:flex;align-items:center;justify-content:center;font-size:14px">${v.e}</div>
+      <span style="font-size:14px;font-weight:600">${v.l}</span>
+      ${pin.status===k?'<span style="margin-left:auto;color:var(--p);font-size:11px;font-weight:700">Current</span>':''}
+    </div>`).join('');
+  openO('pinStatusOv');
+};
+
+window.applyPinStatus=function(id,status){
+  const pin=pins.find(p=>p.id===id);if(!pin)return;
+  pin.status=status; saveLocal();
+  const entry=MARKERS[id];
+  if(entry){
+    const el=entry.getElement();
+    if(el){ el.style.background=PC[status].c; el.textContent=PC[status].e; }
+  }
+  closeO('pinStatusOv'); toast('Status updated');
+  sb.patch('sp_pins',id,{status}).catch(e=>{});
+};
+
+window.confirmDelPin=function(id){
+  if(MARKERS[id])MARKERS[id].getPopup().remove();
+  const pin=pins.find(p=>p.id===id);if(!pin)return;
+  showConfirm('Delete Pin?',pin.address||'This pin will be permanently removed.',()=>delPin(id),'Delete Pin');
+};
+
+async function delPin(id){
+  if(MARKERS[id]){MARKERS[id].remove();delete MARKERS[id]}
+  pins=pins.filter(p=>p.id!==id);
+  saveLocal(); refreshHome();
+  try{ await sb.del('sp_pins', id); }catch(e){}
+  toast('Pin deleted');
+}
+
+function locateMe(){
+  navigator.geolocation.getCurrentPosition(p=>{
+    map.flyTo({center:[p.coords.longitude,p.coords.latitude],zoom:16});
+  },()=>toast('Location unavailable'));
+}
+
+async function reverseGeo(lat,lng){
+  try{
+    const r=await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {headers:{'Accept-Language':'en','User-Agent':'SalesPro-CRM/1.0'}}
+    );
+    const d=await r.json();
+    if(d&&d.address){
+      const a=d.address;
+      const parts=[];
+      if(a.house_number&&a.road) parts.push(a.house_number+' '+a.road);
+      else if(a.road) parts.push(a.road);
+      if(a.city||a.town||a.village) parts.push(a.city||a.town||a.village);
+      if(a.state) parts.push(a.state);
+      if(parts.length) return parts.join(', ');
+    }
+    return d.display_name?d.display_name.split(',').slice(0,3).join(', ').trim()
+           :`${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }catch(e){
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
+// ═══════════════════════════════════
+// ZONES — MapLibre GL Polygons
+// ═══════════════════════════════════
+let zoneDrawing=false, zonePts=[], zoneTmpSrc=null;
+let editZoneId=null, selZoneCol=ZCOLS[0];
+let zonesOn=true, zoneLayerIds=[];
+let drawDotMarkers=[];
+
+function toggleZones(){
+  zonesOn=!zonesOn;
+  zoneLayerIds.forEach(id=>{
+    if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',zonesOn?'visible':'none');
+  });
+  document.getElementById('zToggleBtn').style.opacity=zonesOn?'1':'0.4';
+}
+
+function renderZones(){
+  // Remove existing zone layers/sources
+  zoneLayerIds.forEach(id=>{
+    if(map.getLayer(id))map.removeLayer(id);
+  });
+  zones.forEach(z=>{
+    if(map.getSource('zone-src-'+z.id))map.removeSource('zone-src-'+z.id);
+  });
+  zoneLayerIds=[];
+  zones.forEach(z=>drawZone(z));
+}
+
+function drawZone(z){
+  if(!z.points||z.points.length<3)return;
+  const col=z.color||'#38b6ff';
+  const coords=[...z.points.map(p=>[p[1],p[0]])];
+  coords.push(coords[0]); // close ring
+  const srcId='zone-src-'+z.id;
+  const fillId='zone-fill-'+z.id;
+  const lineId='zone-line-'+z.id;
+  if(!map.getSource(srcId)){
+    map.addSource(srcId,{type:'geojson',data:{type:'Feature',geometry:{type:'Polygon',coordinates:[coords]}}});
+  }
+  if(!map.getLayer(fillId)){
+    map.addLayer({id:fillId,type:'fill',source:srcId,paint:{'fill-color':col,'fill-opacity':0.12}});
+  }
+  if(!map.getLayer(lineId)){
+    map.addLayer({id:lineId,type:'line',source:srcId,paint:{'line-color':col,'line-width':2,'line-dasharray':[4,3]}});
+  }
+  if(!zonesOn){
+    map.setLayoutProperty(fillId,'visibility','none');
+    map.setLayoutProperty(lineId,'visibility','none');
+  }
+  if(isAdmin()){
+    map.on('click',fillId,()=>openZoneEdit(z.id));
+    map.on('click',lineId,()=>openZoneEdit(z.id));
+  }
+  zoneLayerIds.push(fillId,lineId);
+}
+
+function startZoneDraw(){
+  if(!isAdmin()){toast('Admin only');return}
+  zoneDrawing=true;zonePts=[];
+  drawDotMarkers.forEach(m=>m.remove());drawDotMarkers=[];
+  if(map.getLayer('zone-tmp-fill'))map.removeLayer('zone-tmp-fill');
+  if(map.getLayer('zone-tmp-line'))map.removeLayer('zone-tmp-line');
+  if(map.getSource('zone-tmp'))map.removeSource('zone-tmp');
+  document.getElementById('zoneBar').classList.add('show');
+  selZoneCol=ZCOLS[0];
+  document.getElementById('zSwatches').innerHTML=ZCOLS.map(c=>`<div class="zone-swatch${c===selZoneCol?' sel':''}" style="background:${c}" onclick="pickZCol('${c}',this)"></div>`).join('');
+  document.getElementById('zRepSel').innerHTML='<option value="">-- Unassigned --</option>'+users.map(u=>`<option value="${u.id}">${uFull(u)}</option>`).join('');
+  toast('Tap map corners to draw zone');
+}
+
+function pickZCol(c,el){
+  selZoneCol=c;
+  document.querySelectorAll('#zSwatches .zone-swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  updateTmpZone();
+}
+
+function addZonePt(ll){
+  zonePts.push([ll.lat,ll.lng]);
+  // dot marker
+  const el=document.createElement('div');
+  el.style.cssText=`width:10px;height:10px;border-radius:50%;background:${selZoneCol};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.5)`;
+  drawDotMarkers.push(new maplibregl.Marker({element:el,anchor:'center'}).setLngLat([ll.lng,ll.lat]).addTo(map));
+  updateTmpZone();
+}
+
+function updateTmpZone(){
+  if(zonePts.length<2)return;
+  const col=selZoneCol;
+  const coords=zonePts.map(p=>[p[1],p[0]]);
+  if(zonePts.length>=3) coords.push(coords[0]);
+  const geom=zonePts.length>=3
+    ?{type:'Polygon',coordinates:[coords]}
+    :{type:'LineString',coordinates:coords};
+  if(!map.getSource('zone-tmp')){
+    map.addSource('zone-tmp',{type:'geojson',data:{type:'Feature',geometry:geom}});
+    if(zonePts.length>=3){
+      map.addLayer({id:'zone-tmp-fill',type:'fill',source:'zone-tmp',paint:{'fill-color':col,'fill-opacity':0.15}});
+    }
+    map.addLayer({id:'zone-tmp-line',type:'line',source:'zone-tmp',paint:{'line-color':col,'line-width':2,'line-dasharray':[4,3]}});
+  } else {
+    map.getSource('zone-tmp').setData({type:'Feature',geometry:geom});
+    if(map.getLayer('zone-tmp-fill'))map.setPaintProperty('zone-tmp-fill','fill-color',col);
+    if(map.getLayer('zone-tmp-line'))map.setPaintProperty('zone-tmp-line','line-color',col);
+    if(zonePts.length>=3&&!map.getLayer('zone-tmp-fill')){
+      map.addLayer({id:'zone-tmp-fill',type:'fill',source:'zone-tmp',paint:{'fill-color':col,'fill-opacity':0.15}});
+    }
+  }
+}
+
+function finishZone(){
+  if(zonePts.length<3){toast('Need at least 3 points');return}
+  const z={id:'z'+Date.now(),points:zonePts,color:selZoneCol,name:'Zone '+(zones.length+1),repId:document.getElementById('zRepSel').value||null,createdAt:new Date().toISOString()};
+  zones.push(z);saveLocal();
+  if(map.getLayer('zone-tmp-fill'))map.removeLayer('zone-tmp-fill');
+  if(map.getLayer('zone-tmp-line'))map.removeLayer('zone-tmp-line');
+  if(map.getSource('zone-tmp'))map.removeSource('zone-tmp');
+  drawDotMarkers.forEach(m=>m.remove());drawDotMarkers=[];
+  zoneDrawing=false;zonePts=[];
+  document.getElementById('zoneBar').classList.remove('show');
+  drawZone(z); sb.upsert("sp_zones",z).catch(e=>{}); toast('✅ Zone saved!');
+}
+
+function cancelZone(){
+  zoneDrawing=false;zonePts=[];
+  if(map.getLayer('zone-tmp-fill'))map.removeLayer('zone-tmp-fill');
+  if(map.getLayer('zone-tmp-line'))map.removeLayer('zone-tmp-line');
+  if(map.getSource('zone-tmp'))map.removeSource('zone-tmp');
+  drawDotMarkers.forEach(m=>m.remove());drawDotMarkers=[];
+  document.getElementById('zoneBar').classList.remove('show');
+}
+
+function openZoneEdit(id){
+  editZoneId=id;const z=zones.find(x=>x.id===id);if(!z)return;
+  document.getElementById('zeNm').value=z.name||'';
+  document.getElementById('zeRep').innerHTML='<option value="">-- Unassigned --</option>'+users.map(u=>`<option value="${u.id}"${u.id===z.repId?' selected':''}>${uFull(u)}</option>`).join('');
+  selZoneCol=z.color||ZCOLS[0];
+  document.getElementById('zeSwatches').innerHTML=ZCOLS.map(c=>`<div class="zone-swatch${c===selZoneCol?' sel':''}" style="background:${c}" onclick="pickZColEdit('${c}',this)"></div>`).join('');
+  openO('zoneEditOv');
+}
+function pickZColEdit(c,el){selZoneCol=c;document.querySelectorAll('#zeSwatches .zone-swatch').forEach(s=>s.classList.remove('sel'));el.classList.add('sel')}
+function saveZoneEdit(){
+  const z=zones.find(x=>x.id===editZoneId);if(!z)return;
+  z.name=document.getElementById('zeNm').value||z.name;
+  z.repId=document.getElementById('zeRep').value||null;z.color=selZoneCol;
+  saveLocal();
+  if(map.loaded())renderZones();
+  closeO('zoneEditOv');toast('Zone updated');
+}
+function deleteZone(){
+  showConfirm('Delete Zone?','This zone will be permanently removed.',()=>{
+    zones=zones.filter(z=>z.id!==editZoneId);saveLocal();
+    if(map.loaded())renderZones();
+    closeO('zoneEditOv');toast('Zone deleted');
+  },'Delete Zone');
+}
+
+// ═══════════════════════════════════
+// APPOINTMENT / SALE MODALS
+// ═══════════════════════════════════
+function repOpts(selId){return users.map(u=>`<option value="${u.id}"${u.id===(selId||session)?' selected':''}>${uFull(u)}</option>`).join('')}
+
+// ── Date Picker state ──────────────────────────────────────
+let dtYear, dtMonth, dtSelectedDay=null;
+const MOS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WDS=['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function openDatePicker(){
+  const now = new Date();
+  dtYear = now.getFullYear();
+  dtMonth = now.getMonth();
+  dtSelectedDay = null;
+  // Populate hour/min/ampm
+  const h = document.getElementById('dtHour');
+  const m = document.getElementById('dtMin');
+  h.innerHTML = Array.from({length:12},(_,i)=>`<option value="${i+1}">${String(i+1).padStart(2,'0')}</option>`).join('');
+  h.value = '9';
+  m.innerHTML = ['00','15','30','45'].map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('dtAmPm').value='AM';
+  renderDtGrid();
+  openO('dtPickerOv');
+}
+
+function renderDtGrid(){
+  document.getElementById('dtMonthLabel').textContent = MOS[dtMonth]+' '+dtYear;
+  const first = new Date(dtYear, dtMonth, 1).getDay();
+  const days = new Date(dtYear, dtMonth+1, 0).getDate();
+  const today = new Date();
+  let html = WDS.map(d=>`<div style="text-align:center;font-size:9px;color:#666;font-weight:700;padding:4px 0">${d}</div>`).join('');
+  for(let i=0;i<first;i++) html+=`<div></div>`;
+  for(let d=1;d<=days;d++){
+    const isToday = today.getFullYear()===dtYear&&today.getMonth()===dtMonth&&today.getDate()===d;
+    const isSel = dtSelectedDay===d;
+    const past = new Date(dtYear,dtMonth,d) < new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    html+=`<div onclick="${past?'':'dtSelDay('+d+')'}" style="
+      aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+      border-radius:8px;font-size:13px;cursor:${past?'default':'pointer'};
+      background:${isSel?'var(--p)':isToday?'var(--pdim)':'transparent'};
+      color:${isSel?'var(--dark)':past?'#333':isToday?'var(--p)':'var(--w)'};
+      font-weight:${isSel||isToday?'700':'400'};
+      transition:background .15s">${d}</div>`;
+  }
+  document.getElementById('dtDayGrid').innerHTML = html;
+}
+
+function dtNavMonth(dir){
+  dtMonth += dir;
+  if(dtMonth>11){dtMonth=0;dtYear++}
+  if(dtMonth<0){dtMonth=11;dtYear--}
+  dtSelectedDay=null;
+  renderDtGrid();
+}
+
+function dtSelDay(d){
+  dtSelectedDay=d;
+  renderDtGrid();
+}
+
+function confirmDateTime(){
+  if(!dtSelectedDay){toast('⚠️ Select a day');return}
+  const h = parseInt(document.getElementById('dtHour').value);
+  const m = document.getElementById('dtMin').value;
+  const ap = document.getElementById('dtAmPm').value;
+  let hour24 = h % 12;
+  if(ap==='PM') hour24 += 12;
+  const pad = n=>String(n).padStart(2,'0');
+  // ISO for storage
+  const iso = `${dtYear}-${pad(dtMonth+1)}-${pad(dtSelectedDay)}T${pad(hour24)}:${m}:00`;
+  // Human readable for display
+  const display = `${MOS[dtMonth]} ${dtSelectedDay}, ${dtYear} at ${h}:${m} ${ap}`;
+  document.getElementById('pdDate').value = iso;
+  document.getElementById('pdDateLabel').textContent = display;
+  document.getElementById('pdDateLabel').style.color = 'var(--w)';
+  closeO('dtPickerOv');
+}
+
+// ── Universal Pin Details Modal ──────────────────────────────
+function openPinDetail(addr, status){
+  const c = PC[status]||PC['not-home'];
+  document.getElementById('pdTit').textContent = c.e+' '+c.l+' — Details';
+  document.getElementById('pdAddr').value = addr||'';
+  document.getElementById('pdAddr').removeAttribute('readonly');
+  document.getElementById('pdAddr').placeholder = 'Enter or edit address';
+  document.getElementById('pdRep').innerHTML = repOpts();
+  ['pdName','pdPhone','pdEmail','pdDate','pdDetails','pdValue'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('pdDateLabel').textContent='Tap to select date & time';
+  document.getElementById('pdDateLabel').style.color='#555';
+  // Show date row only for appointments
+  document.getElementById('pdDateRow').style.display = status==='appointment'?'':'none';
+  // Show value as required only for quote/appointment
+  const needsVal = status==='quote'||status==='appointment';
+  const vLabel = document.querySelector('label[for="pdValue"]')||document.getElementById('pdValueLabel');
+  const vField = document.getElementById('pdValue');
+  if(vField) vField.placeholder = needsVal?'0.00 (required)':'0.00 (optional)';
+  document.getElementById('pdSaveBtn').textContent =
+    status==='appointment'?'Book Appointment':
+    status==='quote'?'Save Quote':'Save Details';
+  openO('pinDetailOv');
+}
+
+async function savePinDetail(){
+  const name = document.getElementById('pdName').value.trim();
+  const value = document.getElementById('pdValue').value.trim();
+  const date  = document.getElementById('pdDate').value;
+  const status = pendingPinStatus;
+  const needsValue = status==='quote'||status==='appointment';
+  const needsDate  = status==='appointment';
+  if(!name){toast('⚠️ Client name required');return}
+  if(needsValue&&!value){toast('⚠️ Value required for '+PC[status].l);return}
+  if(needsDate&&!date){toast('⚠️ Select appointment date & time');return}
+  const ld={
+    id:'l'+Date.now(), pinId:pendingPinId,
+    name, phone:document.getElementById('pdPhone').value,
+    email:document.getElementById('pdEmail').value,
+    address:document.getElementById('pdAddr').value,
+    status, details:document.getElementById('pdDetails').value,
+    value, repId:document.getElementById('pdRep').value,
+    createdAt:new Date().toISOString()
+  };
+  leads.push(ld);
+  if(status==='appointment'&&date){
+    const ev={id:'ev'+Date.now(),title:'Appt: '+name,start:date,end:date,
+      type:'job',clientId:ld.id,repId:ld.repId,notes:ld.details,value,
+      createdAt:new Date().toISOString()};
+    events.push(ev);
+    try{ await sb.upsert('sp_events', evToDb(ev)); }catch(e){}
+  }
+  saveLocal(); pendingPinId=null; pendingPinStatus=null;
+  closeO('pinDetailOv');
+  renderPins(); refreshHome();
+  try{ await sb.upsert('sp_leads', leadToDb(ld)); }catch(e){}
+  toast(status==='appointment'?'✅ Appointment booked!':'💾 Details saved!');
+  logAct(PC[status].e+' Details saved', name+(value?' — $'+Number(value).toLocaleString():''));
+}
+
+
+// ═══════════════════════════════════
+// HOME
+// ═══════════════════════════════════
+function logAct(title,sub){
+  const act={id:'act'+Date.now(),title,sub,time:new Date().toISOString(),created_at:new Date().toISOString()};
+  acts.unshift(act);
+  if(acts.length>30)acts=acts.slice(0,30);
+  saveLocal();
+  sb.upsert('sp_acts',{id:act.id,title,sub,created_at:act.created_at}).catch(e=>{});
+}
+
+// ═══════════════════════════════════
+// LEADS
+// ═══════════════════════════════════
+let lFilter='all';
+function setLF(el){
+  lFilter=el.dataset.f;
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');renderLeads();
+}
+function renderLeads(){
+  const q=(document.getElementById('lSearch').value||'').toLowerCase();
+  let list=leads.filter(l=>lFilter==='all'||l.status===lFilter);
+  if(q)list=list.filter(l=>(l.name||'').toLowerCase().includes(q)||(l.address||'').toLowerCase().includes(q)||(l.phone||'').toLowerCase().includes(q));
+  const el=document.getElementById('leadsList');
+  if(!list.length){el.innerHTML='<div class="empty">No leads found.</div>';return}
+  el.innerHTML=list.map(l=>{
+    const c=PC[l.status]||PC['callback'];
+    const rep=users.find(u=>u.id===l.repId);
+    const init=((l.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2));
+    return `<div class="lcard" onclick="openLD('${l.id}')">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="lavatar">${init}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:14px">${l.name||'Unknown'}</div>
+        <div style="font-size:11px;color:#888">${l.address||'No address'}</div></div>
+        <div class="lbadge b-${l.status}">${c.e} ${c.l}</div>
+      </div>
+      <div class="ldets">
+        ${l.phone?`<div class="ldet"><strong>${l.phone}</strong>Phone</div>`:''}
+        ${l.value?`<div class="ldet"><strong>$${Number(l.value).toLocaleString()}</strong>Value</div>`:''}
+        ${rep?`<div class="ldet"><strong>${uFull(rep)}</strong>Rep</div>`:''}
+        <div class="ldet"><strong>${new Date(l.createdAt).toLocaleDateString()}</strong>Added</div>
+      </div></div>`;
+  }).join('')+'<div style="height:70px"></div>';
+}
+
+function openLD(id){
+  const l=leads.find(x=>x.id===id);if(!l)return;
+  const c=PC[l.status]||{e:'?',l:'Unknown'};
+  const rep=users.find(u=>u.id===l.repId);
+  document.getElementById('ldTit').textContent=c.e+' '+(l.name||'Lead');
+  document.getElementById('ldBody').innerHTML=`<div style="display:flex;flex-direction:column;gap:9px">
+    ${l.address?`<div><div class="fl">Address</div><div style="font-size:13px;color:#ccc">${l.address}</div></div>`:''}
+    ${l.phone?`<div><div class="fl">Phone</div><div style="font-size:13px;color:#ccc">${l.phone}</div></div>`:''}
+    ${l.email?`<div><div class="fl">Email</div><div style="font-size:13px;color:#ccc">${l.email}</div></div>`:''}
+    ${l.details?`<div><div class="fl">Details</div><div style="font-size:13px;color:#ccc">${l.details}</div></div>`:''}
+    ${l.value?`<div><div class="fl">Value</div><div style="font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:20px;font-weight:700;color:var(--p)">$${Number(l.value).toLocaleString()}</div></div>`:''}
+    ${rep?`<div><div class="fl">Assigned Rep</div><div style="font-size:13px;color:#ccc">${uFull(rep)}</div></div>`:''}
+    ${l.notes?`<div><div class="fl">Notes</div><div style="font-size:13px;color:#ccc">${l.notes}</div></div>`:''}
+    <div><div class="fl">Status</div><div class="lbadge b-${l.status}" style="display:inline-flex">${c.e} ${c.l}</div></div>
+  </div>`;
+  document.getElementById('ldBtns').innerHTML=
+    (hasPerm('delLeads')?`<button class="btn btn-d" onclick="delLead('${id}')">Delete</button>`:'')+
+    `<button class="btn btn-s" onclick="closeO('ldOv')">Close</button>`;
+  openO('ldOv');
+}
+function delLead(id){
+  const l=leads.find(x=>x.id===id);
+  showConfirm('Delete Lead?',(l?l.name:'This lead')+' will be permanently removed.',async()=>{
+    leads=leads.filter(l=>l.id!==id); saveLocal();
+    closeO('ldOv'); renderLeads(); refreshHome(); renderLB();
+    try{ await sb.del('sp_leads',id); }catch(e){}
+    toast('Lead deleted');
+  },'Delete Lead');
+}
+function openAddLead(){
+  if(!hasPerm('leads')){toast('⛔ No permission');return}
+  document.getElementById('nlRep').innerHTML=repOpts();
+  ['nlName','nlPhone','nlEmail','nlAddr','nlValue','nlNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nlStatus').value='callback';openO('addLeadOv');
+}
+function saveNewLead(){
+  const name=document.getElementById('nlName').value.trim();
+  if(!name){toast('⚠️ Name required');return}
+  const ld={id:'l'+Date.now(),name,phone:document.getElementById('nlPhone').value,
+    email:document.getElementById('nlEmail').value,address:document.getElementById('nlAddr').value,
+    status:document.getElementById('nlStatus').value,value:document.getElementById('nlValue').value,
+    repId:document.getElementById('nlRep').value,notes:document.getElementById('nlNotes').value,
+    createdAt:new Date().toISOString()};
+  leads.push(ld); saveLocal(); sb.upsert("sp_leads",leadToDb(ld)).catch(e=>{}); closeO('addLeadOv');renderLeads();refreshHome();renderLB();toast('Lead added!');
+}
+
+// ═══════════════════════════════════
+// SCHEDULE
+// ═══════════════════════════════════
+let calV='day',calD=new Date(),editEvId=null;
+const MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function setCV(el){calV=el.dataset.v;document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderCal()}
+function navCal(d){
+  if(calV==='day')calD.setDate(calD.getDate()+d);
+  else if(calV==='week')calD.setDate(calD.getDate()+d*7);
+  else calD.setMonth(calD.getMonth()+d);
+  renderCal();
+}
+function renderCal(){
+  const body=document.getElementById('calBody');
+  const today=new Date();
+  document.getElementById('calTit').textContent=calV==='month'?MO[calD.getMonth()]+' '+calD.getFullYear():calV==='week'?'Week of '+MO[(new Date(calD).setDate(calD.getDate()-calD.getDay()),new Date(calD.getTime()-calD.getDay()*86400000).getMonth())]+' '+new Date(calD.getTime()-calD.getDay()*86400000).getDate():WD[calD.getDay()]+', '+MO[calD.getMonth()]+' '+calD.getDate();
+
+  if(calV==='month'){
+    const first=new Date(calD.getFullYear(),calD.getMonth(),1);
+    const last=new Date(calD.getFullYear(),calD.getMonth()+1,0);
+    let h='<div class="mgrid">';
+    WD.forEach(d=>h+=`<div class="dh">${d}</div>`);
+    for(let i=0;i<first.getDay();i++)h+='<div class="cday other"></div>';
+    for(let d=1;d<=last.getDate();d++){
+      const dt=new Date(calD.getFullYear(),calD.getMonth(),d);
+      const isTod=dt.toDateString()===today.toDateString();
+      const haEv=events.some(e=>new Date(e.start).toDateString()===dt.toDateString());
+      h+=`<div class="cday${isTod?' today':''}" onclick="selectDay(${dt.getTime()})">${d}${haEv?'<div class="evdot"></div>':''}</div>`;
+    }
+    body.innerHTML=h+'</div>';
+  } else if(calV==='week'){
+    const mon=new Date(calD);mon.setDate(calD.getDate()-calD.getDay());
+    let h='<div style="display:flex;flex-direction:column;gap:2px">';
+    for(let i=0;i<7;i++){
+      const d=new Date(mon);d.setDate(mon.getDate()+i);
+      const isTod=d.toDateString()===today.toDateString();
+      const devs=events.filter(e=>new Date(e.start).toDateString()===d.toDateString());
+      h+=`<div class="wrow"><div class="wdl"><div class="wdn">${WD[d.getDay()]}</div><div class="wdd${isTod?' today':''}">${d.getDate()}</div></div>
+        <div class="wevc">${devs.map(e=>eChip(e)).join('')||'<div style="height:4px"></div>'}</div></div>`;
+    }
+    body.innerHTML=h+'</div>';
+  } else {
+    const devs=events.filter(e=>new Date(e.start).toDateString()===calD.toDateString());
+    let h='<div style="display:flex;flex-direction:column;padding-top:4px">';
+    for(let hr=6;hr<=22;hr++){
+      const lbl=hr===12?'12 PM':hr>12?`${hr-12} PM`:`${hr} AM`;
+      const hevs=devs.filter(e=>new Date(e.start).getHours()===hr);
+      h+=`<div class="tslot"><div class="tlabel">${lbl}</div><div class="tcol">${hevs.map(e=>eChip(e)).join('')}</div></div>`;
+    }
+    body.innerHTML=h+'</div>';
+  }
+}
+function selectDay(ts){calD=new Date(ts);calV='day';document.querySelectorAll('.vtab').forEach((t,i)=>t.classList.toggle('on',i===0));renderCal()}
+function eChip(ev){
+  const ts=new Date(ev.start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const rep=users.find(u=>u.id===ev.repId);
+  return `<div class="echip" onclick="openEditEv('${ev.id}')"><div class="et">${ev.title}</div><div class="es">${ts}${rep?' · '+rep.first:''}</div></div>`;
+}
+function openAddEvent(){
+  if(!hasPerm('events')){toast('⛔ No permission');return}
+  editEvId=null;
+  document.getElementById('evTit').textContent='📅 Add Event';
+  document.getElementById('evRep').innerHTML=repOpts();
+  document.getElementById('evClient').innerHTML='<option value="">-- No client --</option>'+leads.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  const d=new Date(calD);
+  // default to 9am on selected day if in day view, otherwise now
+  if(calV==='day'){d.setHours(9,0,0,0)}
+  const toISO=dt=>new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  const endD=new Date(d.getTime()+60*60*1000); // +1 hour
+  document.getElementById('evStart').value=toISO(d);
+  document.getElementById('evEnd').value=toISO(endD);
+  ['evTitle','evNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('evType').value='job';
+  document.getElementById('evBtns').innerHTML='<button class="btn btn-s" onclick="closeO(\'evOv\')">Cancel</button><button class="btn btn-p" onclick="saveEv()">Save</button>';
+  openO('evOv');
+}
+function openEditEv(id){
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  editEvId=id;document.getElementById('evTit').textContent='✏️ Edit Event';
+  document.getElementById('evTitle').value=ev.title;
+  document.getElementById('evStart').value=ev.start?ev.start.slice(0,16):'';
+  document.getElementById('evEnd').value=ev.end?ev.end.slice(0,16):'';
+  document.getElementById('evType').value=ev.type||'job';
+  document.getElementById('evNotes').value=ev.notes||'';
+  document.getElementById('evRep').innerHTML=repOpts(ev.repId);
+  document.getElementById('evClient').innerHTML='<option value="">-- No client --</option>'+leads.map(l=>`<option value="${l.id}"${l.id===ev.clientId?' selected':''}>${l.name}</option>`).join('');
+  document.getElementById('evBtns').innerHTML=
+    (hasPerm('delEvents')?`<button class="btn btn-d" onclick="delEv('${id}')">Delete</button>`:'')+
+    '<button class="btn btn-s" onclick="closeO(\'evOv\')">Cancel</button><button class="btn btn-p" onclick="saveEv()">Update</button>';
+  openO('evOv');
+}
+function saveEv(){
+  const title=document.getElementById('evTitle').value.trim();if(!title){toast('⚠️ Title required');return}
+  const ev={id:editEvId||'ev'+Date.now(),title,start:document.getElementById('evStart').value,end:document.getElementById('evEnd').value,type:document.getElementById('evType').value,clientId:document.getElementById('evClient').value,repId:document.getElementById('evRep').value,notes:document.getElementById('evNotes').value};
+  if(editEvId){const idx=events.findIndex(e=>e.id===editEvId);events[idx]=ev}else events.push(ev);
+  saveLocal();closeO('evOv');renderCal();toast(editEvId?'Event updated!':'📅 Event added!');editEvId=null;
+}
+function delEv(id){
+  const ev=events.find(e=>e.id===id);
+  showConfirm('Delete Event?',(ev?ev.title:'This event')+' will be permanently removed.',async()=>{
+    events=events.filter(e=>e.id!==id); saveLocal();
+    closeO('evOv'); renderCal();
+    try{ await sb.del('sp_events',id); }catch(e){}
+    toast('Event deleted');
+  },'Delete Event');
+}
+
+// ═══════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════
+function renderLB(){
+  const stats=users.map(u=>{
+    const rev=leads.filter(l=>l.repId===u.id).reduce((s,l)=>s+(Number(l.value)||0),0);
+    const jobs=leads.filter(l=>l.repId===u.id&&(l.status==='appointment'||l.status==='sale')).length;
+    return{...u,rev,jobs,knocked:pins.filter(p=>p.repId===u.id).length};
+  }).sort((a,b)=>b.rev-a.rev||b.jobs-a.jobs);
+  const[f,s,t]=stats;
+  const pi=(u,cls,bc,h)=>u?`<div class="lb-pi"><div class="pav ${cls}">${uInit(u)}</div><div class="pname">${u.first}</div><div class="pbar ${bc}" style="height:${h}px">$${u.rev>=1000?(u.rev/1000).toFixed(1)+'k':u.rev}</div></div>`:'<div class="lb-pi"></div>';
+  document.getElementById('lbPod').innerHTML=pi(s,'s','s',52)+pi(f,'g','g',70)+pi(t,'b','b',38);
+  document.getElementById('lbList').innerHTML=stats.map((u,i)=>`
+    <div class="lbrow">
+      <div class="lbrank">${i+1}</div><div class="lbav">${uInit(u)}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:14px">${uFull(u)}</div>
+      <div style="font-size:11px;color:#888">${u.knocked} doors knocked</div></div>
+      <div style="text-align:right"><div class="lbval">$${u.rev.toLocaleString()}</div>
+      <div class="lbjobs">${u.jobs} job${u.jobs!==1?'s':''}</div></div>
+    </div>`).join('')+'<div style="height:20px"></div>';
+}
+
+// ═══════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════
+const PERM_DEF={
+  pins:{l:'Add Pins',d:'Place pins on the map'},
+  delPins:{l:'Delete Pins',d:'Permanently remove pins'},
+  editPins:{l:'Edit Pins',d:'Change pin status'},
+  leads:{l:'Add Leads',d:'Create new leads'},
+  delLeads:{l:'Delete Leads',d:'Remove lead records'},
+  events:{l:'Add Events',d:'Create calendar events'},
+  delEvents:{l:'Delete Events',d:'Remove calendar events'},
+  zones:{l:'Manage Zones',d:'Create/edit territory zones'},
+  leaderboard:{l:'View Leaderboard',d:'See team rankings'},
+};
+let editPermUid=null;
+
+function renderAdmin(){
+  if(!isAdmin()){document.getElementById('adminScroll').innerHTML='<div class="empty">Admin only</div>';return}
+  document.getElementById('adminScroll').innerHTML=`
+    <div class="admin-sect">
+      <h3>👥 Users (${users.length})</h3>
+      ${users.map(u=>`<div class="urow">
+        <div class="uav">${uInit(u)}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${uFull(u)}</div>
+        <div style="font-size:11px;color:#777">${u.email}</div></div>
+        <div class="utag ${u.role}">${u.role==='admin'?'👑 Admin':'Rep'}</div>
+        <div class="icon-btn" style="background:var(--pdim);color:var(--p)" onclick="window.openPermEdit('${u.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        ${u.id!=='admin'?`<div class="icon-btn" style="background:rgba(231,76,60,.12);color:var(--err)" onclick="window.removeUser('${u.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </div>`:''}
+      </div>`).join('')}
+    </div>
+    <div class="admin-sect">
+      <h3>🗺 Zones (${zones.length})</h3>
+      ${zones.length?zones.map(z=>{const rep=users.find(u=>u.id===z.repId);return`<div class="urow">
+        <div style="width:14px;height:14px;border-radius:4px;background:${z.color||'var(--p)'};flex-shrink:0"></div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${z.name||'Zone'}</div>
+        <div style="font-size:11px;color:#777">${rep?uFull(rep):'Unassigned'}</div></div>
+        <div class="icon-btn" style="background:var(--pdim);color:var(--p)" onclick="goTo('map');setTimeout(()=>openZoneEdit('${z.id}'),200)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div></div>`;}).join(''):'<div style="font-size:12px;color:#666">No zones yet. Go to Map → Draw Zone.</div>'}
+      <div style="margin-top:10px"><button class="btn btn-s" style="width:auto;padding:9px 16px;font-size:13px" onclick="goTo('map');setTimeout(startZoneDraw,200)">+ Draw New Zone</button></div>
+    </div>
+    <div class="admin-sect">
+      <h3>📊 Stats</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div style="font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:22px;font-weight:700;color:var(--p)">${pins.length}</div><div style="font-size:10px;color:#888">Pins</div></div>
+        <div><div style="font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:22px;font-weight:700;color:var(--p)">${leads.length}</div><div style="font-size:10px;color:#888">Leads</div></div>
+        <div><div style="font-family:'Rajdhani','Arial Narrow','Arial',sans-serif;font-size:22px;font-weight:700;color:var(--p)">${events.length}</div><div style="font-size:10px;color:#888">Events</div></div>
+      </div>
+    </div>
+    <div style="height:20px"></div>`;
+}
+
+function openPermEdit(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  editPermUid=uid;
+  document.getElementById('permTit').textContent='Permissions: '+uFull(u);
+  const perms=u.perms||{};
+  document.getElementById('permBody').innerHTML=`
+    <div class="fg"><label class="fl">Role</label>
+      <select class="fi" id="permRole">
+        <option value="rep"${u.role==='rep'?' selected':''}>Sales Rep</option>
+        <option value="admin"${u.role==='admin'?' selected':''}>Admin (full access)</option>
+      </select>
+    </div>
+    <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Individual Permissions</div>
+    ${Object.entries(PERM_DEF).map(([k,v])=>`
+      <div class="perm-row">
+        <div><div class="perm-label">${v.l}</div><div class="perm-desc">${v.d}</div></div>
+        <label class="toggle"><input type="checkbox" id="perm_${k}" ${(u.role==='admin'||perms[k])?'checked':''}><span class="tslider"></span></label>
+      </div>`).join('')}`;
+  openO('permOv');
+}
+async function savePerms(){
+  const u=users.find(x=>x.id===editPermUid);if(!u)return;
+  u.role=document.getElementById('permRole').value;
+  if(!u.perms)u.perms={};
+  Object.keys(PERM_DEF).forEach(k=>u.perms[k]=document.getElementById('perm_'+k)?.checked||false);
+  if(u.role==='admin')Object.keys(PERM_DEF).forEach(k=>u.perms[k]=true);
+  saveLocal(); closeO('permOv'); renderAdmin();
+  try{ await sb.upsert('sp_users', userToDb(u)); }catch(e){}
+  toast('Permissions saved!');
+  if(u.id===session){
+    document.getElementById('adminBtn').style.display=isAdmin()?'':'none';
+    document.getElementById('drawZoneFab').classList.toggle('show',isAdmin());
+  }
+}
+function removeUser(id){
+  const u=users.find(x=>x.id===id); if(!u)return;
+  const nm = uFull(u);
+  // Custom confirm with two delete options
+  const ov = document.getElementById('confirmOv');
+  document.getElementById('confirmTit').textContent='Remove '+nm+'?';
+  document.getElementById('confirmMsg').textContent='Choose what to do with their data:';
+  document.getElementById('confirmOkBtn').textContent='Remove User Only';
+  document.getElementById('confirmOkBtn').onclick=async()=>{
+    closeO('confirmOv');
+    // Reassign their data to nobody (keep pins/leads but remove repId link)
+    pins.filter(p=>p.repId===id).forEach(p=>{ p.repId=null; sb.patch('sp_pins',p.id,{rep_id:null}).catch(()=>{}); });
+    leads.filter(l=>l.repId===id).forEach(l=>{ l.repId=null; sb.patch('sp_leads',l.id,{rep_id:null}).catch(()=>{}); });
+    events.filter(e=>e.repId===id).forEach(e=>{ e.repId=null; sb.patch('sp_events',e.id,{rep_id:null}).catch(()=>{}); });
+    users=users.filter(u=>u.id!==id);
+    saveLocal(); renderAdmin(); renderPins(); renderLB();
+    await sb.del('sp_users', id);
+    toast(nm+' removed (data kept)');
+  };
+  // Add a second "delete all" button dynamically
+  const brow = document.getElementById('confirmOkBtn').parentElement;
+  let delAllBtn = document.getElementById('delAllDataBtn');
+  if(!delAllBtn){
+    delAllBtn = document.createElement('button');
+    delAllBtn.id='delAllDataBtn';
+    delAllBtn.className='btn btn-d';
+    brow.insertBefore(delAllBtn, document.getElementById('confirmOkBtn'));
+  }
+  delAllBtn.textContent='Remove User + All Data';
+  delAllBtn.style.display='';
+  delAllBtn.onclick=async()=>{
+    closeO('confirmOv');
+    pins=pins.filter(p=>p.repId!==id);
+    leads=leads.filter(l=>l.repId!==id);
+    events=events.filter(e=>e.repId!==id);
+    users=users.filter(u=>u.id!==id);
+    saveLocal(); renderAdmin(); renderPins(); renderLB();
+    await Promise.all([
+      sb.del('sp_users',id),
+      sb.delWhere('sp_pins','rep_id',id),
+      sb.delWhere('sp_leads','rep_id',id),
+      sb.delWhere('sp_events','rep_id',id),
+    ]);
+    toast(nm+' and all data deleted');
+  };
+  openO('confirmOv');
+}
+window.removeUser = removeUser;
+window.openPermEdit = openPermEdit;
+
+// ═══════════════════════════════════
+// USER SWITCHER MODAL
+// ═══════════════════════════════════
+function openUserOv(){
+  document.getElementById('userOvList').innerHTML=users.map(u=>`
+    <div class="urow" style="cursor:pointer" onclick="window.switchUser('${u.id}')">
+      <div class="uav" style="width:34px;height:34px;font-size:14px">${uInit(u)}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:13px">${uFull(u)}</div>
+      <div style="font-size:11px;color:#777">${u.email}</div></div>
+      ${u.id===session?'<div style="color:var(--p);font-size:11px;font-weight:700">Active</div>':''}
+    </div>`).join('');
+  openO('userOv');
+}
+window.switchUser = function(id){
+  session=id; S.s('sp_sess',session); closeO('userOv');
+  const u=me();
+  document.getElementById('hName').textContent=u?u.first:'User';
+  document.getElementById('hGreet').textContent='Welcome back, '+uFull(u);
+  document.getElementById('adminBtn').style.display=isAdmin()?'':'none';
+  document.getElementById('drawZoneFab').classList.toggle('show',isAdmin());
+  toast('Switched to '+uFull(u));
+  goTo(curPg);
+};
+function switchUser(id){
+  session=id;S.s('sp_sess',session);closeO('userOv');
+  const u=me();
+  document.getElementById('hName').textContent=u?u.first:'User';
+  document.getElementById('hGreet').textContent='Welcome back, '+uFull(u);
+  document.getElementById('adminBtn').style.display=isAdmin()?'':'none';
+  document.getElementById('drawZoneFab').classList.toggle('show',isAdmin());
+  toast('Switched to '+uFull(u));
+  goTo(curPg);
+}
+
+// ═══════════════════════════════════
+// CONFIRM DIALOG
+// ═══════════════════════════════════
+function showConfirm(title, msg, onOk, btnLabel){
+  document.getElementById('confirmTit').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg || '';
+  const btn = document.getElementById('confirmOkBtn');
+  btn.textContent = btnLabel || 'Delete';
+  btn.onclick = ()=>{ closeO('confirmOv'); onOk(); };
+  openO('confirmOv');
+}
+
+// ═══════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════
+function openO(id){document.getElementById(id).classList.add('show')}
+function closeO(id){document.getElementById(id).classList.remove('show')}
+document.querySelectorAll('.ov').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')}));
+
+// ═══════════════════════════════════
+// TOAST
+// ═══════════════════════════════════
+let _tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600)}
+
+// ═══════════════════════════════════
+// WIRE HEADER CHIP
+// ═══════════════════════════════════
+document.getElementById('hChip').addEventListener('click',openUserOv);
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+window.addEventListener('load',()=>{
+  if(location.search.includes('clear=1')){
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(regs=>{
+        Promise.all([
+          ...regs.map(r=>r.unregister()),
+          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))))
+        ]).then(()=>location.replace(location.pathname));
+      });
+      return;
+    }
+  }
+
+  // Ensure admin always in local users (sync, instant)
+  if(!users.find(u=>u.id==='admin')){
+    const admin={id:'admin',first:'Admin',last:'',email:'admin@salespro.app',
+      pass:'admin123',role:'admin',created_at:new Date().toISOString(),
+      perms:{pins:true,delPins:true,editPins:true,leads:true,delLeads:true,
+             events:true,delEvents:true,zones:true,leaderboard:true}};
+    users.unshift(admin);
+    saveLocal();
+  }
+
+  // Show UI immediately based on session
+  if(session && users.find(u=>u.id===session)){
+    launchApp();
+  }
+  // else auth screen stays visible (it's shown by default)
+
+  // Background tasks — don't block UI
+  setTimeout(()=>{
+    ensureAdmin().catch(()=>{});
+    pullAll().catch(()=>{});
+    startPolling();
+  }, 1500);
+
+  // Service worker
+  const swOk = 'serviceWorker' in navigator &&
+    !location.hostname.includes('claudeusercontent') &&
+    (location.protocol==='https:' || location.hostname==='localhost');
+  if(swOk){
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>{
+        navigator.serviceWorker.addEventListener('message', e=>{
+          if(e.data&&e.data.type==='SW_UPDATED') location.reload();
+        });
+      }).catch(()=>{});
+  }
+});
+</script>
+</body>
+</html>
