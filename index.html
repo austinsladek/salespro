@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SalesPro CRM v202604272800 -->
+<!-- SalesPro CRM v202604272900 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -734,6 +734,14 @@ function saveLocal(){
   S.s('sp_users',users); S.s('sp_pins',pins); S.s('sp_leads',leads);
   S.s('sp_events',events); S.s('sp_zones',zones); S.s('sp_acts',acts);
 }
+
+// ── Core helpers ─────────────────────────────────────────────
+const me      = ()=> users.find(u=>u.id===session)||null;
+const isAdmin = ()=> !!me() && me().role==='admin';
+const hasPerm = (p)=>{ const u=me(); if(!u)return false; if(u.role==='admin')return true; return !!(u.perms&&u.perms[p]); };
+const uFull   = (u)=> u?(u.first+' '+(u.last||'')).trim():'-';
+const uInit   = (u)=> u?((u.first||'?')[0]+((u.last||'')[0]||'')).toUpperCase():'?';
+
 
 // ── DB <> App field mappers ──────────────────────────────────
 function dbToUser(r){ return {id:r.id,first:r.first,last:r.last,email:r.email,pass:r.pass,role:r.role,perms:r.perms||{}}; }

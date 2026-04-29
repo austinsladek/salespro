@@ -1,6 +1,6 @@
-// SalesPro CRM — Service Worker v202604272800
-const CACHE_APP = 'salespro-app-202604272800';
-const CACHE_TILES = 'salespro-tiles-202604272800';
+// SalesPro CRM — Service Worker v202604272900
+const CACHE_APP = 'salespro-app-202604272900';
+const CACHE_TILES = 'salespro-tiles-202604272900';
 
 const APP_SHELL = [
   '/',
