@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SalesPro CRM v202604273100 -->
+<!-- SalesPro CRM v3.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -463,7 +463,7 @@ input:checked+.tslider:before{transform:translateX(18px)}
     <div class="handle"></div>
     <div class="mtit" id="pdTit">📍 Pin Details</div>
     <div class="fg"><label class="fl">Address</label><input class="fi" id="pdAddr" readonly></div>
-    <div class="fg"><label class="fl">Client Name *</label><input class="fi" id="pdName" placeholder="Full name"></div>
+    <div class="fg"><label class="fl" id="pdNameLabel">Client Name</label><input class="fi" id="pdName" placeholder="Full name"></div>
     <div class="fg"><label class="fl">Phone</label><input class="fi" id="pdPhone" type="tel" placeholder="(555) 000-0000"></div>
     <div class="fg"><label class="fl">Email</label><input class="fi" id="pdEmail" type="email" placeholder="client@email.com"></div>
     <!-- Date/time row — shown only for appointments -->
@@ -761,13 +761,14 @@ async function pullAll(){
       sb.all('sp_users'), sb.all('sp_pins'), sb.all('sp_leads'),
       sb.all('sp_events'), sb.all('sp_zones'), sb.all('sp_acts'),
     ]);
-    // Only update if we got real data back (never wipe on empty response)
-    if(u && u.length > 0) users  = u.map(dbToUser);
-    if(p) pins   = p.map(dbToPin);
-    if(l) leads  = l.map(dbToLead);
-    if(e) events = e.map(dbToEv);
-    if(z && z.length > 0) zones  = z;
-    if(a) acts   = a.map(x=>({...x,time:x.created_at})).reverse();
+    // Only replace if Supabase returned a real array
+    const isArr = x => Array.isArray(x);
+    if(isArr(u) && u.length > 0) users  = u.map(dbToUser);
+    if(isArr(p))                 pins   = p.map(dbToPin);
+    if(isArr(l))                 leads  = l.map(dbToLead);
+    if(isArr(e))                 events = e.map(dbToEv);
+    if(isArr(z) && z.length > 0) zones  = z;
+    if(isArr(a))                 acts   = a.map(x=>({...x,time:x.created_at})).reverse();
     // Always ensure admin exists locally
     if(!users.find(x=>x.id==='admin')){
       const admin={id:'admin',first:'Admin',last:'',email:'admin@salespro.app',
@@ -777,7 +778,7 @@ async function pullAll(){
       users.unshift(admin);
     }
     saveLocal();
-    refreshCurrentPage();
+    refreshCurPage();
     showSync('ok');
   }catch(err){
     console.warn('pullAll failed:',err);
@@ -785,7 +786,7 @@ async function pullAll(){
   }
 }
 
-function refreshCurrentPage(){
+function refreshCurPage(){
   if(curPg==='map'){ renderPins(); renderZones(); }
   else if(curPg==='home') refreshHome();
   else if(curPg==='leads') renderLeads();
@@ -1549,10 +1550,8 @@ function openPinDetail(addr, status){
   // Date row — only for appointments
   document.getElementById('pdDateRow').style.display = isAppt?'':'none';
 
-  // Name label — required for quote/appointment, optional for others
-  const nameLabel = document.querySelector('#pinDetailOv label[for="pdName"]')||
-    document.querySelector('#pinDetailOv .fg label.fl');
-  if(nameLabel) nameLabel.textContent = needsDetail?'Client Name *':'Client Name (optional)';
+  // Name label
+  document.getElementById('pdNameLabel').textContent = needsDetail?'Client Name *':'Client Name';
 
   // Value placeholder — required for quote/appointment
   const vField = document.getElementById('pdValue');
